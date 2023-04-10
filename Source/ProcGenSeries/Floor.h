@@ -1,6 +1,7 @@
 #pragma once
 #include "FloorNode.h"
 #include "Room.h"
+#include "DelaunayTriangulation.h"
 
 enum class ESplitOrientation
 {
@@ -32,12 +33,20 @@ public:
 
 	void SpawnRoom(UWorld* World);
 
+	void Triangulation(UWorld* World);
+
+
 	FORCEINLINE TArray<TSharedPtr<FloorNode>> GetPartitionedFloor() const { return PartitionedFloor; }
 	FORCEINLINE TArray<TSharedPtr<FloorNode>> GetRoomCandidates() const { return RoomCandidates; }
 private:
 	TArray<TSharedPtr<class FloorNode>> FloorNodeStack;
 	TArray<TSharedPtr<FloorNode>> PartitionedFloor;
 	TArray<TSharedPtr<FloorNode>> RoomCandidates;
+
+	/* *★*TODO : 추후 vector들의 메모리 해제를 위한 기능을 만들거나 Triangulation.h내의 
+		vector와 그에 대한 함수들을 전부 TArray 계열로 변경해야함.
+	*/
+	std::vector<delaunay::Point<float>> RoomPointsArr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Room, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<ARoom> Room;

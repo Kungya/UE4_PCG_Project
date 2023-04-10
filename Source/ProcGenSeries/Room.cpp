@@ -79,14 +79,13 @@ void ARoom::Tick(float DeltaTime)
 
 void ARoom::ConstructRooms(const FTransform& Transform)
 {
-	/*if (Node.IsValid())
-		UE_LOG(LogTemp, Warning, TEXT("Node is Valid, Count : %d"), Node.GetSharedReferenceCount());
-
-	UE_LOG(LogTemp, Warning, TEXT("Width : %f, Ratio : %f"), Node->GetRoomWidth() * UnitLength, Node->GetRoomWidth() * UnitLength / 400.f);*/
+	
+	//UE_LOG(LogTemp, Warning, TEXT("Width : %f, Ratio : %f"), Node->GetRoomWidth() * UnitLength, Node->GetRoomWidth() * UnitLength / 400.f);
 
 	RoomRoof->SetRelativeLocation(GetRootComponent()->GetRelativeLocation() + FVector(0.f, 0.f, RoomHeightFactor * 400.f));
 
-	if (InstancedRoomWall->GetInstanceCount() == 0)
+	// Node.IsValid() 미체크시 런타임 이외에도 타 클래스 또는 블루프린트에서 Null 상태인 TSharedPtr 참조를 시도해 Crash 발생 가능성 유의
+	if (InstancedRoomWall->GetInstanceCount() == 0 && Node.IsValid())
 	{
 		SetStaticMeshSize(FloorSize);
 
@@ -95,11 +94,13 @@ void ARoom::ConstructRooms(const FTransform& Transform)
 		Transforms.Push(FTransform(FRotator(0.f, 180.f, 0.f), FVector(Node->GetCornerCoordinates().RoomLowerRightX * UnitLength, Node->GetCornerCoordinates().RoomLowerRightY * UnitLength, 0.f), FVector(Node->GetRoomWidth() * UnitLength / 400.f, RoomWallThicknessFactor, RoomHeightFactor)));
 		Transforms.Push(FTransform(FRotator(0.f, 270.f, 0.f), FVector(Node->GetCornerCoordinates().RoomUpperLeftX * UnitLength, Node->GetCornerCoordinates().RoomLowerRightY * UnitLength, 0.f), FVector(Node->GetRoomLength() * UnitLength / 400.f, RoomWallThicknessFactor, RoomHeightFactor)));
 		
+		//UE_LOG(LogTemp, Warning, TEXT("Transforms Num() : %d"), Transforms.Num());
+
 		// loop 4(number of walls) times
 		for (int32 i = 0; i < Transforms.Num(); i++)
 		{
 			InstancedRoomWall->AddInstance(Transforms[i]);
-		}	
+		}
 	}
 }
 

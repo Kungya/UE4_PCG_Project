@@ -12,7 +12,7 @@ Floor::Floor()
 	RoomMinX = 4;
 	RoomMinY = 4;
 
-	RoomMinArea = 80;
+	RoomMinArea = 40;
 
 	// 실제 길이와 면적은 UnitLength에 곱하여 결정 됨
 	// 그러므로 GetArea등에서 이용되는 면적은 UnitLength에 곱해지기 전의 값.
@@ -279,8 +279,9 @@ void Floor::DrawRoomNodes(UWorld* World)
 	for (int32 i = 0; i < RoomCandidates.Num(); i++)
 	{
 		FVector MidPoint(RoomCandidates[i]->GetMidPointX() * UnitLength, RoomCandidates[i]->GetMidPointY() * UnitLength, 10.f);
-		DrawDebugString(World, MidPoint, FString::FromInt(RoomCandidates[i]->GetArea()), 0, FColor::Orange, -1.f, false, 3.f);
-		DrawDebugString(World, MidPoint + FVector(500.f, 500.f, 0.f), FString::SanitizeFloat(RoomCandidates[i]->GetRoomArea()), 0, FColor::Orange, -1.f, false, 3.f);
+		// Draw Area of Node and Room
+		//DrawDebugString(World, MidPoint, FString::FromInt(RoomCandidates[i]->GetArea()), 0, FColor::Orange, -1.f, false, 3.f);
+		//DrawDebugString(World, MidPoint + FVector(500.f, 500.f, 0.f), FString::SanitizeFloat(RoomCandidates[i]->GetRoomArea()), 0, FColor::Orange, -1.f, false, 3.f);
 		UE_LOG(LogTemp, Warning, TEXT(" RoomArea : %f"), RoomCandidates[i]->GetRoomArea());
 	}
 }
@@ -300,9 +301,33 @@ void Floor::SpawnRoom(UWorld* World)
 		RoomActor->SetUnitLength(UnitLength);
 		RoomActor->SetRoomSize(RoomCandidates[i]->GetRoomSize());
 		RoomActor->SetNode(RoomCandidates[i]);
-
-
+		//UE_LOG(LogTemp, Warning, TEXT("%d Room's Point : (%f, %f)"), i + 1, SpawnLocation.X, SpawnLocation.Y);
 		/* ------------------------------------------------------------------------------- */
 		UGameplayStatics::FinishSpawningActor(RoomActor, FTransform(SpawnLocation));
+
+		// for Delaunay Triangulation
+		RoomPointsArr.push_back(delaunay::Point<float>(RoomCandidates[i]->GetMidPointX() * UnitLength, RoomCandidates[i]->GetMidPointY() * UnitLength));
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Count Room : %d"), RoomCandidates.Num());
+	Triangulation(World);
+}
+
+void Floor::Triangulation(UWorld* World)
+{
+
+	/*for (auto& i : RoomCandidates)
+	{
+		RoomPointsArr.push_back(delaunay::Point<float>(i->GetMidPointX() * UnitLength, i->GetMidPointY() * UnitLength));
+	}*/
+	
+	delaunay::Delaunay<float> Triangulated = delaunay::triangulate(RoomPointsArr);
+
+	UE_LOG(LogTemp, Warning, TEXT("Tri, edge Count : %d, %d"), Triangulated.triangles.size(), Triangulated.edges.size());
+	for (auto& i : Triangulated.triangles)
+	{
+		DrawDebugLine(World, FVector(i.p0.x, i.p0.y, 1700.f), FVector(i.p1.x, i.p1.y, 1700.f), FColor::Green, true, -1, 0, 50.f);
+		DrawDebugLine(World, FVector(i.p1.x, i.p1.y, 1700.f), FVector(i.p2.x, i.p2.y, 1700.f), FColor::Green, true, -1, 0, 50.f);
+		DrawDebugLine(World, FVector(i.p2.x, i.p2.y, 1700.f), FVector(i.p0.x, i.p0.y, 1700.f), FColor::Green, true, -1, 0, 50.f);
 	}
 }
