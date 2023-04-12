@@ -2,6 +2,8 @@
 #include "FloorNode.h"
 #include "Room.h"
 #include "DelaunayTriangulation.h"
+#include "MinimumSpanningTree.h"
+#include "Containers/Set.h"
 
 enum class ESplitOrientation
 {
@@ -35,6 +37,9 @@ public:
 
 	void Triangulation(UWorld* World);
 
+	void SetNodes();
+
+	FORCEINLINE void SetMSTEdges(TArray<TPair<FVector2D, FVector2D>> newMSTEdges) { MSTEdges = newMSTEdges; }
 
 	FORCEINLINE TArray<TSharedPtr<FloorNode>> GetPartitionedFloor() const { return PartitionedFloor; }
 	FORCEINLINE TArray<TSharedPtr<FloorNode>> GetRoomCandidates() const { return RoomCandidates; }
@@ -47,6 +52,17 @@ private:
 		vector와 그에 대한 함수들을 전부 TArray 계열로 변경해야함.
 	*/
 	std::vector<delaunay::Point<float>> RoomPointsArr;
+
+	//TSet<delaunay::Edge<float>> TriangulatedEdgesSet;
+	TArray<delaunay::Edge<float>> TriangulatedUniqueEdgesArr;
+
+	TArray<Node> Nodes;
+
+	TArray<TPair<FVector2D, FVector2D>> MSTEdges;
+
+	float MinCostSum;
+
+	// TSharedPtr<MinimumSpanningTree> MST;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Room, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<ARoom> Room;

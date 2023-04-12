@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <algorithm>
 #include <vector>
 
@@ -18,23 +17,15 @@ namespace delaunay
         Point() : x{ 0 }, y{ 0 } {}
         Point(T _x, T _y) : x{ _x }, y{ _y } {}
 
-        // TODO:
         template <typename U>
-        Point(U _x, U _y) : x{ static_cast<T>(_x) }, y{ static_cast<T>(_y) }
+        Point(U _x, U _y) : x{ static_cast<T>(_x) }, y{ static_cast<T>(_y) } {}
+        // equal check overloading ** Only Float TODO :: 
+        bool operator==(const Point<float>& other) const
         {
+            return (FMath::IsNearlyEqual(other.x, (float)x) && FMath::IsNearlyEqual(other.y, (float)y));
+            //return (other.x == x && other.y == y);
+        }
 
-        }
-        // output stream overloading
-        /*friend std::ostream& operator<<(std::ostream& os, const Point<T>& p)
-        {
-            os << "x=" << p.x << "  y=" << p.y;
-            return os;
-        }*/
-        // equal check overloading
-        bool operator==(const Point<T>& other) const
-        {
-            return (other.x == x && other.y == y);
-        }
         // not equal check overloading
         bool operator!=(const Point<T>& other) const { return !operator==(other); }
     };
@@ -48,11 +39,6 @@ namespace delaunay
         // Constructor
         Edge(Node const& _p0, Node const& _p1) : p0{ _p0 }, p1{ _p1 } {}
 
-        /*friend std::ostream& operator<<(std::ostream& os, const Edge& e)
-        {
-            os << "p0: [" << e.p0 << " ] p1: [" << e.p1 << "]";
-            return os;
-        }*/
         // equal check overloading, two point
         bool operator==(const Edge& other) const
         {
@@ -60,6 +46,9 @@ namespace delaunay
                 (other.p0 == p1 && other.p1 == p0));
         }
     };
+	/*--- overloading for using TSet---*/
+	FORCEINLINE uint32 GetTypeHash(const Point<float>& Pt) { return FCrc::MemCrc32(&Pt, sizeof(Point<float>)); }
+	FORCEINLINE uint32 GetTypeHash(const Edge<float>& Ed) { return FCrc::MemCrc32(&Ed, sizeof(Edge<float>)); }
 
     template <typename T>
     struct Circle

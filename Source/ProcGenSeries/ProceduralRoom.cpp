@@ -64,7 +64,7 @@ void AProceduralRoom::BeginPlay()
 	TheFloor->SpawnRoom(GetWorld());
 	
 
-	UE_LOG(LogTemp, Warning, TEXT("Partitioned Nodes Count : %d"), TheFloor->GetPartitionedFloor().Num());
+	UE_LOG(LogTemp, Warning, TEXT("Partitioned Block Count : %d"), TheFloor->GetPartitionedFloor().Num());
 
 	//PickRoomCandidate(TheFloor);
 }

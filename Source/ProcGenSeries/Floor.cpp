@@ -282,7 +282,7 @@ void Floor::DrawRoomNodes(UWorld* World)
 		// Draw Area of Node and Room
 		//DrawDebugString(World, MidPoint, FString::FromInt(RoomCandidates[i]->GetArea()), 0, FColor::Orange, -1.f, false, 3.f);
 		//DrawDebugString(World, MidPoint + FVector(500.f, 500.f, 0.f), FString::SanitizeFloat(RoomCandidates[i]->GetRoomArea()), 0, FColor::Orange, -1.f, false, 3.f);
-		UE_LOG(LogTemp, Warning, TEXT(" RoomArea : %f"), RoomCandidates[i]->GetRoomArea());
+		//UE_LOG(LogTemp, Warning, TEXT(" RoomArea : %f"), RoomCandidates[i]->GetRoomArea());
 	}
 }
 
@@ -314,13 +314,8 @@ void Floor::SpawnRoom(UWorld* World)
 }
 
 void Floor::Triangulation(UWorld* World)
-{
-
-	/*for (auto& i : RoomCandidates)
-	{
-		RoomPointsArr.push_back(delaunay::Point<float>(i->GetMidPointX() * UnitLength, i->GetMidPointY() * UnitLength));
-	}*/
-	
+{	
+	// TODO : Convert TSharedPtr or not.
 	delaunay::Delaunay<float> Triangulated = delaunay::triangulate(RoomPointsArr);
 
 	UE_LOG(LogTemp, Warning, TEXT("Tri, edge Count : %d, %d"), Triangulated.triangles.size(), Triangulated.edges.size());
@@ -329,5 +324,45 @@ void Floor::Triangulation(UWorld* World)
 		DrawDebugLine(World, FVector(i.p0.x, i.p0.y, 1700.f), FVector(i.p1.x, i.p1.y, 1700.f), FColor::Green, true, -1, 0, 50.f);
 		DrawDebugLine(World, FVector(i.p1.x, i.p1.y, 1700.f), FVector(i.p2.x, i.p2.y, 1700.f), FColor::Green, true, -1, 0, 50.f);
 		DrawDebugLine(World, FVector(i.p2.x, i.p2.y, 1700.f), FVector(i.p0.x, i.p0.y, 1700.f), FColor::Green, true, -1, 0, 50.f);
+	}
+
+	for (auto& i : Triangulated.edges)
+	{
+		//TriangulatedEdgesSet.Add(i);
+		TriangulatedUniqueEdgesArr.AddUnique(i);
+	}
+	// 이제, TArray<delaunay::Edge<float>> TrinagulatedEdgeArr에 Edge들이 "중복되지 않게" 전부 들어있음.
+	// Edge : Point 2개 소유, Point는 x, y좌표 각각 소유
+	/*
+		vertex들 에 대한 정보가 명확하게 있는 여기 Floor class에서, Node 구조체를 생성하고 넘기자
+	*/
+
+	/*for (auto& i : TriangulatedUniqueEdgesArr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%f, %f | %f, %f]"), i.p0.x, i.p0.y, i.p1.x, i.p1.y);
+	}*/
+	UE_LOG(LogTemp, Warning, TEXT("간선의 개수, TriangulatedUniqueEdgesArr Size : %d"), TriangulatedUniqueEdgesArr.Num());
+	SetNodes();
+
+	TUniquePtr<MinimumSpanningTree> MST(new MinimumSpanningTree(Nodes, TriangulatedUniqueEdgesArr));
+	
+	MinCostSum = MST->prim();
+	UE_LOG(LogTemp, Warning, TEXT("Prim Result : %f"), MinCostSum);
+	SetMSTEdges(MST->GetMSTEdges());
+
+	UE_LOG(LogTemp, Warning, TEXT("MST Edges Size : %d"), MSTEdges.Num());
+
+	for (auto& i : MSTEdges)
+	{
+		DrawDebugLine(World, FVector(i.Key.X, i.Key.Y, 1700.f), FVector(i.Value.X, i.Value.Y, 1700.f), FColor::Orange, true, -1, 0, 100.f);
+	}
+}
+
+void Floor::SetNodes()
+{
+	for (int32 i =0; i<RoomCandidates.Num(); i++)
+	{
+		Nodes.Add(Node(i, RoomCandidates[i]->GetMidPointX() * UnitLength, RoomCandidates[i]->GetMidPointY() * UnitLength));
+		//UE_LOG(LogTemp, Warning, TEXT("id : %d, X : %f, Y : %f"), Nodes[i].id, Nodes[i].x, Nodes[i].y);
 	}
 }
