@@ -37,7 +37,9 @@ public:
 
 	void Triangulation(UWorld* World);
 
-	void SetNodes();
+	void CreateMST(UWorld* World);
+
+	void SetNodes(UWorld* World);
 
 	FORCEINLINE void SetMSTEdges(TArray<TPair<FVector2D, FVector2D>> newMSTEdges) { MSTEdges = newMSTEdges; }
 
@@ -53,7 +55,6 @@ private:
 	*/
 	std::vector<delaunay::Point<float>> RoomPointsArr;
 
-	//TSet<delaunay::Edge<float>> TriangulatedEdgesSet;
 	TArray<delaunay::Edge<float>> TriangulatedUniqueEdgesArr;
 
 	TArray<Node> Nodes;
@@ -61,8 +62,6 @@ private:
 	TArray<TPair<FVector2D, FVector2D>> MSTEdges;
 
 	float MinCostSum;
-
-	// TSharedPtr<MinimumSpanningTree> MST;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Room, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<ARoom> Room;

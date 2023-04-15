@@ -24,8 +24,10 @@ struct Node
 	// TODO : Get id By Coord
 	FORCEINLINE int32 TryGetIdByCoord(float CoordX, float CoordY) const
 	{
-		if (FMath::IsNearlyEqual(x, CoordX) && FMath::IsNearlyEqual(y, CoordY))
+		float Tolerance = 0.01f;
+		if (FMath::IsNearlyEqual(x, CoordX, Tolerance) && FMath::IsNearlyEqual(y, CoordY, Tolerance))
 		{ // succeed
+			//UE_LOG(LogTemp, Warning, TEXT("id %d : %f %f | %f %f"), id, x, CoordX, y, CoordY);
 			return id;
 		}
 		else
@@ -45,16 +47,13 @@ struct Node
 			return FVector2D::ZeroVector;
 		}
 	}
-
-	// TODO : Get Coord By id
-
 };
 
 
 class MinimumSpanningTree
 {
 public:
-	MinimumSpanningTree(TArray<Node> Nodes, TArray<delaunay::Edge<float>> EdgesArr);
+	MinimumSpanningTree(TArray<Node> Nodes, TArray<delaunay::Edge<float>> EdgesArr, UWorld* World);
 
 	float GetDistance(float x1, float y1, float x2, float y2);
 
@@ -63,6 +62,10 @@ public:
 	float prim();
 
 	void ConvertCoordToIdAndAddEdge(TArray<delaunay::Edge<float>> EdgesArr);
+
+	int32 SearchStartingPointOfEdge(float Dist, int32 DestinationId);
+
+	int32 ConvertCoordToId(const float& CoordX, const float& CoordY);
 	FVector2D ConvertIdToCoord(const int32& id);
 
 	FORCEINLINE TArray<TPair<FVector2D, FVector2D>> GetMSTEdges()
@@ -82,5 +85,7 @@ private:
 	TArray<TPair<FVector2D, FVector2D>> MSTEdges;
 
 	bool hasBeenCalled;
+
+	UWorld* World;
 
 };
