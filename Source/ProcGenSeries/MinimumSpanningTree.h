@@ -14,6 +14,7 @@ struct Node
 	int32 id;
 	float x, y;
 
+	// not used yet.
 	bool operator==(const Node& otherNode) const
 	{
 		// TODO : 조건에 id 까지?

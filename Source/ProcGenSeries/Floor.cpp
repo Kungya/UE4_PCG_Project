@@ -12,7 +12,7 @@ Floor::Floor()
 	RoomMinX = 4;
 	RoomMinY = 4;
 
-	RoomMinArea = 40;
+	RoomMinArea = 40 ;
 
 	// 실제 길이와 면적은 UnitLength에 곱하여 결정 됨
 	// 그러므로 GetArea등에서 이용되는 면적은 UnitLength에 곱해지기 전의 값.
@@ -20,6 +20,7 @@ Floor::Floor()
 
 	SplitChance = 1.75f;
 
+	ReincorporationChance = 12.5f;
 
 	UE_LOG(LogTemp, Warning, TEXT("Floor Created"));
 }
@@ -311,6 +312,10 @@ void Floor::SpawnRoom(UWorld* World)
 
 	// Triangulate Rooms and Create MST
 	Triangulation(World);
+	// prim 알고리즘 진행
+	CreateMST(World);
+	// Cycle을 만들기 위해 확률적으로 Triangulation에 있던 간선 추가
+	ReincorporateEdge(World);
 }
 
 void Floor::Triangulation(UWorld* World)
@@ -331,22 +336,6 @@ void Floor::Triangulation(UWorld* World)
 	}
 	// 이제, TArray<delaunay::Edge<float>> TrinagulatedEdgeArr에 Edge들이 "중복되지 않게" 전부 들어있음.
 	// Edge : Point 2개 소유, Point는 x, y좌표 각각 소유
-
-	// prim 알고리즘 진행
-	CreateMST(World);
-}
-
-void Floor::CreateMST(UWorld* World)
-{
-	SetNodes(World);
-	TUniquePtr<MinimumSpanningTree> MST(new MinimumSpanningTree(Nodes, TriangulatedUniqueEdgesArr, World));
-	MinCostSum = MST->prim();
-	UE_LOG(LogTemp, Warning, TEXT("Prim Result(최소가중치합) : %f"), MinCostSum);
-	SetMSTEdges(MST->GetMSTEdges());
-	for (auto& i : MSTEdges)
-	{
-		DrawDebugLine(World, FVector(i.Key.X, i.Key.Y, 1700.f), FVector(i.Value.X, i.Value.Y, 1700.f), FColor::Red, true, -1, 0, 100.f);
-	}
 }
 
 void Floor::SetNodes(UWorld* World)
@@ -357,4 +346,44 @@ void Floor::SetNodes(UWorld* World)
 		// 각 방의 위치에 좌표로 변환한 id 표시.
 		//DrawDebugString(World, FVector(RoomCandidates[i]->GetMidPointX() * UnitLength, RoomCandidates[i]->GetMidPointY() * UnitLength, 500.f), FString::FromInt(i), 0, FColor::Orange, -1.f, false, 3.f);
 	}
+}
+
+void Floor::CreateMST(UWorld* World)
+{
+	SetNodes(World);
+	TUniquePtr<MinimumSpanningTree> MST(new MinimumSpanningTree(Nodes, TriangulatedUniqueEdgesArr, World));
+	MinCostSum = MST->prim();
+	UE_LOG(LogTemp, Warning, TEXT("Prim Result(최소가중치합) : %f"), MinCostSum);
+	SetMSTEdges(MST->GetMSTEdges());
+	/*for (auto& i : MSTEdges)
+	{
+		DrawDebugLine(World, FVector(i.Key.X, i.Key.Y, 1700.f), FVector(i.Value.X, i.Value.Y, 1700.f), FColor::Red, true, -1, 0, 100.f);
+	}*/
+}
+
+void Floor::ReincorporateEdge(UWorld* World)
+{
+	Hallways = MoveTemp(MSTEdges);
+
+	for (const auto& i : TriangulatedUniqueEdgesArr)
+	{
+		// 15%
+		if (FMath::FRandRange(0.f, 100.f) < ReincorporationChance)
+		{
+			TPair<FVector2D, FVector2D> AddedEdge(FVector2D(i.p0.x, i.p0.y), FVector2D(i.p1.x, i.p1.y));
+			if (AddUniqueEdge(Hallways, AddedEdge))
+			{ // succeed AddUniqueEdge
+
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("%d"), Hallways.Num());
+
+	for (const auto& i : Hallways)
+	{
+		DrawDebugLine(World, FVector(i.Key.X, i.Key.Y, 1700.f), FVector(i.Value.X, i.Value.Y, 1700.f), FColor::Red, true, -1, 0, 100.f);
+	}
+	// TODO : 문제점 : 삼각분할된 삼각형의 예각의 크기가 극단적으로 작은 경우, 재추가된 간선이 다른 방을 통과하여 지나감.
+	// 이를 해결하기 위해 재추가된 간선의 양 끝 점의 사이에 방의 좌표에 해당하는 영역이 지나간다면 추가를 하지 않음?
 }

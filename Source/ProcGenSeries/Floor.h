@@ -37,9 +37,33 @@ public:
 
 	void Triangulation(UWorld* World);
 
+	void SetNodes(UWorld* World);
+
 	void CreateMST(UWorld* World);
 
-	void SetNodes(UWorld* World);
+	/* ------------------------------------------------ */
+	FORCEINLINE bool bEdgesEqual(const TPair<FVector2D, FVector2D>& Edge1, const TPair<FVector2D, FVector2D>& Edge2)
+	{
+		return ((Edge1.Key.Equals(Edge2.Key) && Edge1.Value.Equals(Edge2.Value)) || (Edge1.Key.Equals(Edge2.Value) && Edge1.Value.Equals(Edge2.Key)));
+	}
+
+	FORCEINLINE bool AddUniqueEdge(TArray<TPair<FVector2D, FVector2D>>& EdgeArray, const TPair<FVector2D, FVector2D>& newEdge)
+	{
+		for (auto& Edge : EdgeArray)
+		{
+			if (bEdgesEqual(Edge, newEdge))
+			{
+				// 이미 존재하는 복도(간선)
+				return false;
+			}
+		}
+		// Add Unqiue 성공
+		EdgeArray.Add(newEdge);
+		return true;
+	}
+
+	void ReincorporateEdge(UWorld* World);
+	/* ------------------------------------------------ */
 
 	FORCEINLINE void SetMSTEdges(TArray<TPair<FVector2D, FVector2D>> newMSTEdges) { MSTEdges = newMSTEdges; }
 
@@ -61,6 +85,8 @@ private:
 
 	TArray<TPair<FVector2D, FVector2D>> MSTEdges;
 
+	TArray<TPair<FVector2D, FVector2D>> Hallways;
+
 	float MinCostSum;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Room, meta = (AllowPrivateAccess = "true"))
@@ -76,4 +102,6 @@ private:
 	float UnitLength;
 
 	float SplitChance;
+
+	float ReincorporationChance;
 };
