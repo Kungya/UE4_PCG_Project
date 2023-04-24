@@ -27,7 +27,8 @@ public:
 	void SplitVertical(TSharedPtr<FloorNode> InA, TSharedPtr<FloorNode> InB, TSharedPtr<FloorNode> InC);
 
 	void DrawFloorNodes(class UWorld* World);
-	void DrawFloorNode(UWorld* World, FCornerCoordinates Coordinates, int32 count);
+	void DrawFloorNode(UWorld* World, FCornerCoordinates Coordinates, int32 count, FColor NodeColor);
+	void DrawGrid(UWorld* World);
 
 	void SelectRoomCandiate(UWorld* World);
 	
@@ -69,6 +70,8 @@ public:
 
 	FORCEINLINE TArray<TSharedPtr<FloorNode>> GetPartitionedFloor() const { return PartitionedFloor; }
 	FORCEINLINE TArray<TSharedPtr<FloorNode>> GetRoomCandidates() const { return RoomCandidates; }
+	
+	FORCEINLINE TArray<TPair<FVector2D, FVector2D>> GetHallways() const { return Hallways; };
 private:
 	TArray<TSharedPtr<class FloorNode>> FloorNodeStack;
 	TArray<TSharedPtr<FloorNode>> PartitionedFloor;
@@ -98,6 +101,7 @@ private:
 	int32 RoomMinY;
 
 	int32 RoomMinArea;
+	float RoomMinRatio;
 
 	float UnitLength;
 

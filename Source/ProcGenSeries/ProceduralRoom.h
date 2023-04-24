@@ -54,11 +54,22 @@ private:
 public:
 	//void PickRoomCandidate(class TSharedPtr<Floor> CandidateFloor);
 
-	// Segment to contruct Romm Wall Mesh 
+	// Segment to contruct Room Wall Mesh 
 private:
-	class UInstancedMeshComponent* InstnacedRoomMesh;
+	class UInstancedMeshComponent* InstancedRoomMesh;
 
+	/* Pathfinding Segment */
+private:
+	UPROPERTY(VisibleAnywhere, Category = "Pathfinding")
+	float PathWidth;
+
+	UPROPERTY(VisibleAnywhere, Category = "Pathfinding")
+	UStaticMeshComponent* PathMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = "Pathfinding")
+	UMaterialInterface* PathMaterial;
+
+	TArray<TPair<FVector2D, FVector2D>> Hallways;
 public:
-	//void OnConstruction();
-	
+	void BuildPath(const FVector2D& StartLocation2D, const FVector2D& EndLocation2D);
 };

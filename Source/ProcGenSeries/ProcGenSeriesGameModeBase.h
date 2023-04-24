@@ -14,4 +14,7 @@ class PROCGENSERIES_API AProcGenSeriesGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+public:
+
+
 };

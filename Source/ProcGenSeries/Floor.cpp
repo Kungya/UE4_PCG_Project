@@ -13,12 +13,13 @@ Floor::Floor()
 	RoomMinY = 4;
 
 	RoomMinArea = 40 ;
+	RoomMinRatio = 0.25f;
 
 	// 실제 길이와 면적은 UnitLength에 곱하여 결정 됨
 	// 그러므로 GetArea등에서 이용되는 면적은 UnitLength에 곱해지기 전의 값.
 	UnitLength = 500.f;
 
-	SplitChance = 1.75f;
+	SplitChance = 1.5f;
 
 	ReincorporationChance = 12.5f;
 
@@ -227,11 +228,11 @@ void Floor::DrawFloorNodes(UWorld* World)
 	for (int32 i = 0; i < PartitionedFloor.Num(); i++)
 	{
 		FCornerCoordinates Coordinates = PartitionedFloor[i]->GetCornerCoordinates();
-		DrawFloorNode(World, Coordinates, i);
+		DrawFloorNode(World, Coordinates, 20.f, FColor::Yellow);
 	}
 }
 
-void Floor::DrawFloorNode(UWorld* World, FCornerCoordinates Coordinates, int32 count)
+void Floor::DrawFloorNode(UWorld* World, FCornerCoordinates Coordinates, int32 count, FColor NodeColor)
 {
 	// count * 10 in Z axis : to distinguish by height
 	const FVector UpperLeft(Coordinates.UpperLeftX * UnitLength, Coordinates.UpperLeftY * UnitLength, count * 10);
@@ -240,10 +241,27 @@ void Floor::DrawFloorNode(UWorld* World, FCornerCoordinates Coordinates, int32 c
 	const FVector LowerRight(Coordinates.LowerRightX * UnitLength, Coordinates.LowerRightY * UnitLength, count * 10);
 
 	
-	DrawDebugLine(World, UpperLeft, UpperRight, FColor::Yellow, true, -1, 0, 50.f);
-	DrawDebugLine(World, UpperLeft, LowerLeft, FColor::Yellow, true, -1, 0, 50.f);
-	DrawDebugLine(World, LowerRight, UpperRight, FColor::Yellow, true, -1, 0, 50.f);
-	DrawDebugLine(World, LowerRight, LowerLeft, FColor::Yellow, true, -1, 0, 50.f);
+	DrawDebugLine(World, UpperLeft, UpperRight, NodeColor, true, -1, 0, 50.f);
+	DrawDebugLine(World, UpperLeft, LowerLeft, NodeColor, true, -1, 0, 50.f);
+	DrawDebugLine(World, LowerRight, UpperRight, NodeColor, true, -1, 0, 50.f);
+	DrawDebugLine(World, LowerRight, LowerLeft, NodeColor, true, -1, 0, 50.f);
+}
+
+void Floor::DrawGrid(UWorld* World)
+{
+	// (0, 0) ~ (FloorGridSizeX * UnitLength, FloorGridSizeY * UnitLength),  여기선 (25000, 25000)
+	for (int32 x = 0; x < FloorGridSizeX; x++)
+	{
+		for (int32 y = 0; y < FloorGridSizeY; y++)
+		{
+			FCornerCoordinates Grid;
+			Grid.UpperLeftX = x;
+			Grid.UpperLeftY = y;
+			Grid.LowerRightX = (x + 1);
+			Grid.LowerRightY = (y + 1);
+			DrawFloorNode(World, Grid, 10.f, FColor::Black);
+		}
+	}
 }
 
 void Floor::SelectRoomCandiate(UWorld* World)
@@ -254,18 +272,29 @@ void Floor::SelectRoomCandiate(UWorld* World)
 	// ** 이 과정에서 방 크기가 사라지거나 심하게 작아질 수 있으므로 이전 단계에서 
 	// 너무 작은 방들은 전부 제외하고 중하위 크기 이상의 방들만 골라내는 것 -> 일정 크기 이상의 방이어야 플레이 가능함
 	// 기존의 80%로 만든다, 그럼 상하좌우 각각 10%씩 감소시키면 되므로
-	// 중점을 구하는 방법과 비슷하게 양끝단 좌표를 더하고 0.1 곱하면 좌측상단 기존의 90%에 해당하는 좌표 생성...
+	// 중점을 구하는 방법과 비슷하게 양끝단 좌표를 더하고 0.1 곱하면 좌측상단 기존의 90%에 해당하는 좌표 생성..
+	
+	/*	길찾기를 위해 위의 방법이 아닌 격자 방식으로 변경한다. 격자는 이미 정의되어 있으므로 기존에 90%에 해당하는 길이로 
+	*	만드는 것이 아니라 분할된 FloorNode의 좌표에서 각각 1 UnitLength 만큼의 여유분을 두고 축소 시킨다.
+	*	이렇게 하면 테두리 끝점을 제외한 내부 방들의 사이는 2 UnitLength (= 10m) 만큼의 여유를 격자 단위로 갖게되며,
+	*	추후 복도가 맵밖으로 돌아가야할 수도 있는 최악의 경우를 제외하고 격자를 넣은 int 배열에서 길찾기가 가능해진다.
+	*/
 	for (int32 i = 0; i < PartitionedFloor.Num(); i++)
 	{
-		if (PartitionedFloor[i]->GetArea() > RoomMinArea)
+		if (PartitionedFloor[i]->GetArea() > RoomMinArea && PartitionedFloor[i]->GetFloorNodeRatio() > RoomMinRatio)
 		{
 			FCornerCoordinates Coordinates = PartitionedFloor[i]->GetCornerCoordinates();
 
-			// 각각 1:9, 9:1로 내분
-			Coordinates.RoomUpperLeftX = (Coordinates.UpperLeftX * 9 + Coordinates.LowerRightX) / 10.f;
+			// 각각 1 UnitLength 만큼 뺀다
+			Coordinates.RoomUpperLeftX = Coordinates.UpperLeftX + 1;
+			Coordinates.RoomUpperLeftY = Coordinates.UpperLeftY + 1;
+			Coordinates.RoomLowerRightX = Coordinates.LowerRightX - 1;
+			Coordinates.RoomLowerRightY = Coordinates.LowerRightY - 1;
+
+			/*Coordinates.RoomUpperLeftX = (Coordinates.UpperLeftX * 9 + Coordinates.LowerRightX) / 10.f;
 			Coordinates.RoomUpperLeftY = (Coordinates.UpperLeftY * 9 + Coordinates.LowerRightY) / 10.f;
 			Coordinates.RoomLowerRightX = (Coordinates.UpperLeftX + Coordinates.LowerRightX * 9) / 10.f;
-			Coordinates.RoomLowerRightY = (Coordinates.UpperLeftY + Coordinates.LowerRightY * 9) / 10.f;
+			Coordinates.RoomLowerRightY = (Coordinates.UpperLeftY + Coordinates.LowerRightY * 9) / 10.f;*/
 
 			PartitionedFloor[i]->SetCornerCoordinates(Coordinates);
 

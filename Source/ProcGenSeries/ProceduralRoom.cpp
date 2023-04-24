@@ -7,6 +7,12 @@
 #include "Floor.h"
 #include "Components/InstancedStaticMeshComponent.h"
 
+#include "NavigationSystem.h"
+#include "NavigationPath.h"
+#include "NavigationData.h"
+
+
+
 // Sets default values
 AProceduralRoom::AProceduralRoom()
 {
@@ -28,6 +34,27 @@ AProceduralRoom::AProceduralRoom()
 	RoomWidth = 1000.f;
 
 	Radius = 25.f;
+	/* ------------------------------------------------ */
+	PathMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PATHMESH"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> PSM(TEXT("StaticMesh'/Game/Assets/Floor_400x400.Floor_400x400'"));
+	if (PSM.Succeeded())
+	{
+		PathMesh->SetStaticMesh(PSM.Object);
+	}
+
+	PathMaterial = CreateDefaultSubobject<UMaterial>(TEXT("PATHMATERIAL"));
+	static ConstructorHelpers::FObjectFinder<UMaterial> PM(TEXT("Material'/Game/Assets/M_PathMaterial.M_PathMaterial'"));
+	if (PM.Succeeded())
+	{
+		PathMaterial = PM.Object;
+	}
+
+	PathMesh->SetVisibility(false);
+	/* ------------------------------------------------ */
+	PathWidth = 50.f;
+
+	/*StartLocation = FVector(-400.f, -1000.f, 300.f);
+	EndLocation = FVector(800.f, 1000.f, 300.f);*/
 }
 
 // Called when the game starts or when spawned
@@ -44,6 +71,7 @@ void AProceduralRoom::BeginPlay()
 	TheFloor->Partition();
 	// 분할된 부분 Grid로 보여줌
 	TheFloor->DrawFloorNodes(GetWorld());
+	TheFloor->DrawGrid(GetWorld());
 
 	// 일정 크기 이상 조건을 충족하는 FloorNode 들을 기존 길이의 80%로 줄여 따로 RoomCandidates에 저장시킴 
 	TheFloor->SelectRoomCandiate(GetWorld());
@@ -60,13 +88,20 @@ void AProceduralRoom::BeginPlay()
 	1) Room Actor에서 방 크기에 대한 변수를 만들어 두고, RoomCandidates[i]에 있는 좌표, 크기 인자를
 	SetRoomSize라는 함수에 넘겨 그 때마다 RoomSize를 변경한 다음, 그 actor를 spawn하기
 	*/
-
-	TheFloor->SpawnRoom(GetWorld());
-	
-
 	UE_LOG(LogTemp, Warning, TEXT("Partitioned Block Count : %d"), TheFloor->GetPartitionedFloor().Num());
+	TheFloor->SpawnRoom(GetWorld());
 
-	//PickRoomCandidate(TheFloor);
+	/* ------------------------------------------------------------------------------------------------ */
+	// TODO : Move Sematnics
+	/*Hallways = TheFloor->GetHallways();
+
+	for (const auto& i : Hallways)
+	{
+		BuildPath(i.Key, i.Value);
+	}*/
+
+
+
 }
 
 // Called every frame
@@ -133,4 +168,62 @@ void AProceduralRoom::PlacePointsOnGrid()
 			GetWorld()->SpawnActor<AActor>(ChairClass, RandomPointInSquare, FRotator(0.f, RandomYaw, 0.f));
 		}
 	}
+}
+
+void AProceduralRoom::BuildPath(const FVector2D& StartLocation2D, const FVector2D& EndLocation2D)
+{
+	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (!NavSystem)
+	{
+		UE_LOG(LogTemp, Error, TEXT("NavSystem Not Found. !!"));
+		return;
+	}
+
+	FPathFindingQuery Query;
+	Query.StartLocation = FVector(StartLocation2D, 0.f);
+	Query.EndLocation = FVector(EndLocation2D, 0.f);
+	Query.NavData = NavSystem->GetDefaultNavDataInstance(FNavigationSystem::DontCreate);
+	Query.Owner = GetOwner();
+
+	FPathFindingResult Result = NavSystem->FindPathSync(Query);
+
+	if (Result.IsSuccessful() && Result.Path.IsValid())
+	{
+		TArray<FNavPathPoint> PathPoints = Result.Path->GetPathPoints();
+
+		UE_LOG(LogTemp, Warning, TEXT("%d"), PathPoints.Num());
+		for (int32 i = 0; i < PathPoints.Num() - 1; i++)
+		{
+			DrawDebugPoint(GetWorld(), PathPoints[i].Location + FVector(0.f, 0.f, 1700.f), 30.f, FColor::Red, true, -1.f, 0);
+			// TODO : DrawDebugPoint Last Index of PathPoints
+			DrawDebugLine(GetWorld(), PathPoints[i].Location + FVector(0.f, 0.f, 1700.f), PathPoints[i + 1].Location + FVector(0.f, 0.f, 1700.f), FColor::Blue, true, -1.f, 0, 100.f);
+			UE_LOG(LogTemp, Warning, TEXT("%f %f %f"), PathPoints[i].Location.X, PathPoints[i].Location.Y, PathPoints[i].Location.Z);
+		}
+
+		/*for (int32 i = 0; i < PathPoints.Num() - 1; i++)
+		{
+			FVector StartPoint = PathPoints[i].Location;
+			FVector EndPoint = PathPoints[i + 1].Location;
+
+			FVector PathSegment = StartPoint;
+			float PathSegmentLength = PathSegment.X;
+			FRotator PathSegmentRotation = PathSegment.Rotation();
+
+			UStaticMeshComponent* PathMeshComponent = NewObject<UStaticMeshComponent>(this);
+			PathMeshComponent->SetStaticMesh(PathMesh->GetStaticMesh());
+			PathMeshComponent->SetMaterial(0, PathMaterial);
+			PathMeshComponent->SetWorldLocation(StartPoint);
+			PathMeshComponent->SetWorldRotation(PathSegmentRotation);
+
+
+			PathMeshComponent->SetWorldScale3D(FVector(0.2f, 0.2f, 1.f));
+			PathMeshComponent->RegisterComponent();
+			PathMeshComponent->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
+		}*/
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Pathfinding Failed !!!!!"));
+	}
+
 }

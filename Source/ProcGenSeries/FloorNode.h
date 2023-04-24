@@ -34,6 +34,18 @@ public:
 
 		return Area;
 	}
+	FORCEINLINE float GetWidth() const
+	{
+		float Width = CornerCoordinates.LowerRightX - CornerCoordinates.UpperLeftX;
+		
+		return Width;
+	}
+	FORCEINLINE float GetLength() const
+	{
+		float Length = CornerCoordinates.LowerRightY - CornerCoordinates.UpperLeftY;
+
+		return Length;
+	}
 	FORCEINLINE float GetRoomWidth() const
 	{
 		float RoomWidth = CornerCoordinates.RoomLowerRightX - CornerCoordinates.RoomUpperLeftX;
@@ -46,6 +58,17 @@ public:
 		float RoomLength = CornerCoordinates.RoomLowerRightY - CornerCoordinates.RoomUpperLeftY;
 
 		return RoomLength;
+	}
+
+	FORCEINLINE float GetFloorNodeRatio() const
+	{
+		float Width = GetWidth();
+		float Length = GetLength();
+
+		if (Width < Length)
+			return Width / Length;
+		else
+			return Length / Width;
 	}
 
 	FORCEINLINE float GetRoomArea() const // 축소된 이후의 Area
