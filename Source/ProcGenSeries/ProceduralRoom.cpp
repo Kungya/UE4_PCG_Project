@@ -5,6 +5,8 @@
 #include "DrawDebugHelpers.h"
 #include "FloorNode.h"
 #include "Floor.h"
+#include "AStar.h"
+
 #include "Components/InstancedStaticMeshComponent.h"
 
 #include "NavigationSystem.h"
@@ -24,7 +26,7 @@ AProceduralRoom::AProceduralRoom()
 
 	// 방의 크기는 1000x100, 5개로 분할시 하나당 길이는 200
 	GridSizeX = 5;
-	GridSizeY = 5;	
+	GridSizeY = 5;
 	SquareWidth = 200.f;
 
 	TopLeft = FVector(0.f);
@@ -100,8 +102,40 @@ void AProceduralRoom::BeginPlay()
 		BuildPath(i.Key, i.Value);
 	}*/
 
-
-
+	/* AStar Exercise */
+	//TUniquePtr<AStar> PathFind(new AStar());
+	//PathFind->AStarSearch(ExampleGrid);
+	/*	계획
+	*	우선, MidPoint를 주면 RoomCadidate 배열 중 해당하는 FloorNode의 양끝 좌표(그리드)를
+	*	반환하는 기능을 만들어 실제 좌표와 Grid index간의 원활한 이동을 목표로한다
+	*	그 다음, 강의 영상에서 알려준 복도 생성을 위한 thresholds, 문지방을 방내에서 선택해야
+	*	하는데, 지금으로써 생각할 수 있는 방법은 방 내에서 동서남북으로 기본적으로 4개의 
+	*	잠재적인 문지방 타일을 하나씩 들고 있다가, MST에서 Edge를 받아왔을 때 그 양끝점좌표
+	*	에 각각 서로 가장가까운 문지방 타일을 선택해 그 두개의 타일 좌표를 AStar에 넘겨 
+	*	길찾기를 수행해 복도를 만드는 방법이다.
+	*	그럼 복도 타일들을 가지고있는 배열과 양끝 문지방 타일 좌표를 알고 있으므로 실제 복도
+	*	지형과 문도 생성이 가능할 것이다.
+	*	그리고 영상 말미에 방들의 시작과 끝을 지정하고 싶을 경우, 각각의 정점과 Edge들에다가
+	*	다시 BFS를 수행해 가장 길이가 길게 나온 두 개의 정점을 던전의 시작과 끝 지점으로
+	*	정한다.
+	*	
+	*	계획 중 가장 최우선시 되어야할 사항은 역시 기존 설계가 잘못되어 실제 float 중점좌표로
+	*	계산되었으므로 이를 Grid 기반으로 바꾸어야 한다는 것
+	* 
+		위에서 지금으로써 생각할 수 있는 방법이라고 한 부분에서,
+	*	동서남북보다 방의 꼭짓점을 제외한 모든 모서리들을 전부 가지고 두 방사이의 모서리들의 거리
+	*	를 전부 계산 후 가장 가까운 2개의 모서리를 문지방으로 선택하여 길찾기를 수행하는 것이
+	*	맞는 것같다.
+	*  [ □□□ ]
+	*  [ □□□ ] 
+	*  [ □□□ ] 
+	*  [ □□□ ]
+	*  (x, y) 4 x 3의 방이 있는 경우, 각각 그리드의 좌표는 그리드 기반으로 어떻게 정의될까?
+	*  좌측 최상단의 좌표는 당연 UpperLeftX, UpperLeftY,
+	*  그럼 그 우측은?UpperLeftX, UpperLeftY + 1, +2....
+	*  그럼 그 아래는 UpperLeftX+1, UpperLeftY
+	*  => 배열의 index 처리와 같다
+	*/
 }
 
 // Called every frame

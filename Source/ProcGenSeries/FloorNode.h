@@ -98,6 +98,8 @@ public:
 		return (CornerCoordinates.RoomUpperLeftY + CornerCoordinates.RoomLowerRightY) / 2.f;
 	}
 
+	//FCornerCoordinates TryGetGridCoordByMidPoint(float MidPointX, float MidPointY) const;
+
 private:
 	FCornerCoordinates CornerCoordinates;
 

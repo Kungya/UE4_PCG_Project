@@ -31,3 +31,11 @@ FloorNode::~FloorNode()
 
 	//UE_LOG(LogTemp, Warning, TEXT("FloorNode Destroyed"));
 }
+
+/*FCornerCoordinates FloorNode::TryGetGridCoordByMidPoint(float MidPointX, float MidPointY) const
+{
+	if (FMath::IsNearlyEqual(GetMidPointX(), MidPointX) && FMath::IsNearlyEqual(GetMidPointY(), MidPointY))
+	{
+		return CornerCoordinates;
+	}
+}*/

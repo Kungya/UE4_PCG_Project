@@ -72,4 +72,21 @@ private:
 	TArray<TPair<FVector2D, FVector2D>> Hallways;
 public:
 	void BuildPath(const FVector2D& StartLocation2D, const FVector2D& EndLocation2D);
+
+private:
+	/* AStar Data Segment */
+	int32 ExampleGrid[9][10]
+		= { { 1, 0, 1, 1, 1, 1, 0, 1, 1, 1 },
+			{ 1, 1, 1, 0, 1, 1, 1, 0, 1, 1 },
+			{ 1, 1, 1, 0, 1, 1, 0, 1, 0, 1 },
+			{ 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
+			{ 1, 1, 1, 0, 1, 1, 1, 0, 1, 0 },
+			{ 1, 0, 1, 1, 1, 1, 0, 1, 0, 0 },
+			{ 1, 0, 0, 0, 0, 1, 0, 0, 0, 1 },
+			{ 1, 0, 1, 1, 1, 1, 0, 1, 1, 1 },
+			{ 1, 1, 1, 0, 0, 0, 1, 0, 0, 1 } };
+
+	
+	/*TPair<int32, int32> Src = TPair<int32, int32>(8, 0);
+	TPair<int32, int32> Dest = TPair<int32, int32>(0, 0);*/
 };

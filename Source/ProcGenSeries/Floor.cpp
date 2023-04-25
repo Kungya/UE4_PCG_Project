@@ -394,7 +394,7 @@ void Floor::ReincorporateEdge(UWorld* World)
 {
 	Hallways = MoveTemp(MSTEdges);
 
-	for (const auto& i : TriangulatedUniqueEdgesArr)
+	/*for (const auto& i : TriangulatedUniqueEdgesArr)
 	{
 		// 15%
 		if (FMath::FRandRange(0.f, 100.f) < ReincorporationChance)
@@ -405,7 +405,7 @@ void Floor::ReincorporateEdge(UWorld* World)
 
 			}
 		}
-	}
+	}*/
 
 	UE_LOG(LogTemp, Warning, TEXT("%d"), Hallways.Num());
 
