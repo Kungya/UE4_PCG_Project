@@ -32,10 +32,16 @@ FloorNode::~FloorNode()
 	//UE_LOG(LogTemp, Warning, TEXT("FloorNode Destroyed"));
 }
 
-/*FCornerCoordinates FloorNode::TryGetGridCoordByMidPoint(float MidPointX, float MidPointY) const
+FCornerCoordinates FloorNode::TryGetCornerCoordinatesByMidPoint(float MidPointX, float MidPointY) const
 {
-	if (FMath::IsNearlyEqual(GetMidPointX(), MidPointX) && FMath::IsNearlyEqual(GetMidPointY(), MidPointY))
-	{
+	float tolerance = 0.01f;
+	//UE_LOG(LogTemp, Error, TEXT("%f == %f | %f == %f"), GetMidPointX(), MidPointX, GetMidPointY(), MidPointY);
+	if (FMath::IsNearlyEqual(GetMidPointX(), MidPointX, tolerance) && FMath::IsNearlyEqual(GetMidPointY(), MidPointY, tolerance))
+	{ // succeed
 		return CornerCoordinates;
 	}
-}*/
+	else
+	{ // fail
+		return FCornerCoordinates{ -1, -1, -1, -1,-1, -1, -1, -1 };
+	}
+}

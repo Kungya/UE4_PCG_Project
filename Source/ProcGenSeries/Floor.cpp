@@ -345,6 +345,8 @@ void Floor::SpawnRoom(UWorld* World)
 	CreateMST(World);
 	// Cycle을 만들기 위해 확률적으로 Triangulation에 있던 간선 추가
 	ReincorporateEdge(World);
+
+	SelectThreshold(World);
 }
 
 void Floor::Triangulation(UWorld* World)
@@ -413,6 +415,222 @@ void Floor::ReincorporateEdge(UWorld* World)
 	{
 		DrawDebugLine(World, FVector(i.Key.X, i.Key.Y, 1700.f), FVector(i.Value.X, i.Value.Y, 1700.f), FColor::Red, true, -1, 0, 100.f);
 	}
-	// TODO : 문제점 : 삼각분할된 삼각형의 예각의 크기가 극단적으로 작은 경우, 재추가된 간선이 다른 방을 통과하여 지나감.
-	// 이를 해결하기 위해 재추가된 간선의 양 끝 점의 사이에 방의 좌표에 해당하는 영역이 지나간다면 추가를 하지 않음?
+}
+
+void Floor::SelectThreshold(UWorld* World)
+{
+	// first, Get CornerCoodinates of 2 Rooms from Edge in TArray<> Hallways
+	for (const auto& i : Hallways)
+	{ // select one Edge
+		FCornerCoordinates RoomACoord;
+		FCornerCoordinates RoomBCoord;
+
+		for (const auto& j : RoomCandidates)
+		{
+			RoomACoord = j->TryGetCornerCoordinatesByMidPoint(i.Key.X / UnitLength, i.Key.Y / UnitLength);
+			if (RoomACoord.UpperLeftX != -1)
+			{ // succeed in Trying
+				break;
+			}
+		}
+
+		for (const auto& j : RoomCandidates)
+		{
+			RoomBCoord = j->TryGetCornerCoordinatesByMidPoint(i.Value.X / UnitLength, i.Value.Y / UnitLength);
+			if (RoomBCoord.UpperLeftX != -1)
+			{ // succeed in Trying
+				break;
+			}
+		}
+		
+		/*
+		UE_LOG(LogTemp, Warning, TEXT("A : %f, %f | %f, %f"), RoomACoord.RoomUpperLeftX * UnitLength, RoomACoord.RoomUpperLeftY * UnitLength, RoomACoord.RoomLowerRightX * UnitLength, RoomACoord.RoomLowerRightY * UnitLength);
+		UE_LOG(LogTemp, Warning, TEXT("B : %f, %f | %f, %f"), RoomBCoord.RoomUpperLeftX * UnitLength, RoomBCoord.RoomUpperLeftY * UnitLength, RoomBCoord.RoomLowerRightX * UnitLength, RoomBCoord.RoomLowerRightY * UnitLength);
+		DrawDebugLine(World, FVector(RoomACoord.RoomUpperLeftX * UnitLength, RoomACoord.RoomUpperLeftY * UnitLength, 1800.f), FVector(RoomACoord.RoomLowerRightX * UnitLength, RoomACoord.RoomLowerRightY * UnitLength, 1800.f), FColor::Cyan, true, -1.f, 0, 100.f);
+		DrawDebugLine(World, FVector(RoomBCoord.RoomUpperLeftX * UnitLength, RoomBCoord.RoomLowerRightY * UnitLength, 1800.f), FVector(RoomBCoord.RoomLowerRightX * UnitLength, RoomBCoord.RoomUpperLeftY * UnitLength, 1800.f), FColor::Magenta, true, -1.f, 0, 100.f);
+		*/
+
+		/* Edge에 따른 각각 방의 양 끝점 좌표를 알게되었으니, 이제 방마다 양끝점 4개끼리 거리를 구한 뒤,
+		* 가장 가까운 점 2개를 구하고 그 점 2개 주위의 타일 4 : 4 중에서 가장 가까운 타일 2개를 Threshold로
+		* 지정한다 */
+
+		// RoomACoord, RoomBCoord
+
+		TArray<FVector2D> RoomA;
+		RoomA.Push(FVector2D(RoomACoord.RoomUpperLeftX * UnitLength, RoomACoord.RoomUpperLeftY * UnitLength));
+		RoomA.Push(FVector2D(RoomACoord.RoomUpperLeftX * UnitLength, RoomACoord.RoomLowerRightY * UnitLength));
+		RoomA.Push(FVector2D(RoomACoord.RoomLowerRightX * UnitLength, RoomACoord.RoomLowerRightY * UnitLength));
+		RoomA.Push(FVector2D(RoomACoord.RoomLowerRightX * UnitLength, RoomACoord.RoomUpperLeftY * UnitLength));
+
+		TArray<FVector2D> RoomB;
+		RoomB.Push(FVector2D(RoomBCoord.RoomUpperLeftX * UnitLength, RoomBCoord.RoomUpperLeftY * UnitLength));
+		RoomB.Push(FVector2D(RoomBCoord.RoomUpperLeftX * UnitLength, RoomBCoord.RoomLowerRightY * UnitLength));
+		RoomB.Push(FVector2D(RoomBCoord.RoomLowerRightX * UnitLength, RoomBCoord.RoomLowerRightY * UnitLength));
+		RoomB.Push(FVector2D(RoomBCoord.RoomLowerRightX * UnitLength, RoomBCoord.RoomUpperLeftY * UnitLength));
+
+		FVector2D ClosestCornerA;
+		FVector2D ClosestCornerB;
+
+		float MinDist = TNumericLimits<float>::Max();
+		float CurrentDist;
+
+		// Euclidean Distance
+		for (const FVector2D& A : RoomA)
+		{
+			for (const FVector2D& B : RoomB)
+			{
+				CurrentDist = FVector2D::DistSquared(A, B);
+
+				if (CurrentDist < MinDist)
+				{
+					MinDist = CurrentDist;
+					ClosestCornerA = A;
+					ClosestCornerB = B;
+				}
+			}
+		}
+
+		// 가장 가까운 두 방의 모서리를 각각 구했으니 이제 이 모서리가 어느 쪽의 모서리인지 판별해야한다
+
+		TArray<FVector2D> RoomATiles;
+		TArray<FVector2D> RoomBTiles;
+
+		float tolerance = 0.01f;
+		// Room A
+		if (FMath::IsNearlyEqual(ClosestCornerA.X, RoomACoord.RoomUpperLeftX * UnitLength, tolerance) && FMath::IsNearlyEqual(ClosestCornerA.Y, RoomACoord.RoomUpperLeftY * UnitLength, tolerance))
+		{
+			// ClosestCornerA는 좌측상단
+			/*	좌측상단이므로 좌측상단 주변, 즉 좌측상단 x + 1, x + 2와 y + 1, y + 2가 후보 타일이 된다.
+			*	단, 추후 길찾기가 힘들거나 실패할 경우, 3 과 4...까지 고려한다. */
+			RoomATiles.Push(ClosestCornerA + FVector2D(1 * UnitLength, 0));
+			RoomATiles.Push(ClosestCornerA + FVector2D(2 * UnitLength, 0));
+			RoomATiles.Push(ClosestCornerA + FVector2D(0, 1 * UnitLength));
+			RoomATiles.Push(ClosestCornerA + FVector2D(0, 2 * UnitLength));
+		}
+		else if (FMath::IsNearlyEqual(ClosestCornerA.X, RoomACoord.RoomUpperLeftX * UnitLength, tolerance) && FMath::IsNearlyEqual(ClosestCornerA.Y, RoomACoord.RoomLowerRightY * UnitLength, tolerance))
+		{
+			// ClosestCornerA는 좌측하단
+			/*	좌측하단이므로 좌측하단 주변, 즉 좌측하단 x + 1, x + 2와 y - 1, y - 2가 후보 타일이 된다.
+			*	단, 추후 길찾기가 힘들거나 실패할 경우, 3 과 4...까지 고려한다. */
+			RoomATiles.Push(ClosestCornerA + FVector2D(1 * UnitLength, 0));
+			RoomATiles.Push(ClosestCornerA + FVector2D(2 * UnitLength, 0));
+			RoomATiles.Push(ClosestCornerA + FVector2D(0, -1 * UnitLength));
+			RoomATiles.Push(ClosestCornerA + FVector2D(0, -2 * UnitLength));
+		}
+		else if (FMath::IsNearlyEqual(ClosestCornerA.X, RoomACoord.RoomLowerRightX * UnitLength, tolerance) && FMath::IsNearlyEqual(ClosestCornerA.Y, RoomACoord.RoomLowerRightY * UnitLength, tolerance))
+		{
+			// ClosestCornerA는 우측하단
+
+			/*	우측하단이므로 우측하단 주변, 즉 우측하단 x - 1, x - 2와 y - 1, y - 2가 후보 타일이 된다.
+			*	단, 추후 길찾기가 힘들거나 실패할 경우, 3 과 4...까지 고려한다. */
+			RoomATiles.Push(ClosestCornerA + FVector2D(-1 * UnitLength, 0));
+			RoomATiles.Push(ClosestCornerA + FVector2D(-2 * UnitLength, 0));
+			RoomATiles.Push(ClosestCornerA + FVector2D(0, -1 * UnitLength));
+			RoomATiles.Push(ClosestCornerA + FVector2D(0, -2 * UnitLength));
+		}
+		else if (FMath::IsNearlyEqual(ClosestCornerA.X, RoomACoord.RoomLowerRightX * UnitLength, tolerance) && FMath::IsNearlyEqual(ClosestCornerA.Y, RoomACoord.RoomUpperLeftY * UnitLength, tolerance))
+		{
+			// ClosestCornerA는 우측상단
+
+			/*	우측상단이므로 우측상단 주변, 즉 우측상단 x - 1, x - 2와 y + 1, y + 2가 후보 타일이 된다.
+			*	단, 추후 길찾기가 힘들거나 실패할 경우, 3 과 4...까지 고려한다.
+			*/
+			RoomATiles.Push(ClosestCornerA + FVector2D(-1 * UnitLength, 0));
+			RoomATiles.Push(ClosestCornerA + FVector2D(-2 * UnitLength, 0));
+			RoomATiles.Push(ClosestCornerA + FVector2D(0, 1 * UnitLength));
+			RoomATiles.Push(ClosestCornerA + FVector2D(0, 2 * UnitLength));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Room A : 어느 쪽 모서리인지 판별 실패, 디버깅 필요"));
+		}
+
+
+
+		// Room B
+		if (FMath::IsNearlyEqual(ClosestCornerB.X, RoomBCoord.RoomUpperLeftX * UnitLength, tolerance) && FMath::IsNearlyEqual(ClosestCornerB.Y, RoomBCoord.RoomUpperLeftY * UnitLength, tolerance))
+		{
+			// ClosestCornerㅠ는 좌측상단
+
+			/*	좌측상단이므로 좌측상단 주변, 즉 좌측상단 x + 1, x + 2와 y + 1, y + 2가 후보 타일이 된다.
+			*	단, 추후 길찾기가 힘들거나 실패할 경우, 3 과 4...까지 고려한다. */
+			RoomBTiles.Push(ClosestCornerB + FVector2D(1 * UnitLength, 0));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(2 * UnitLength, 0));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(0, 1 * UnitLength));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(0, 2 * UnitLength));
+		}
+		else if (FMath::IsNearlyEqual(ClosestCornerB.X, RoomBCoord.RoomUpperLeftX * UnitLength, tolerance) && FMath::IsNearlyEqual(ClosestCornerB.Y, RoomBCoord.RoomLowerRightY * UnitLength, tolerance))
+		{
+			// ClosestCornerB는 좌측하단
+
+			/*	좌측하단이므로 좌측하단 주변, 즉 좌측하단 x + 1, x + 2와 y - 1, y - 2가 후보 타일이 된다.
+			*	단, 추후 길찾기가 힘들거나 실패할 경우, 3 과 4...까지 고려한다. */
+			RoomBTiles.Push(ClosestCornerB + FVector2D(1 * UnitLength, 0));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(2 * UnitLength, 0));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(0, -1 * UnitLength));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(0, -2 * UnitLength));
+		}
+		else if (FMath::IsNearlyEqual(ClosestCornerB.X, RoomBCoord.RoomLowerRightX * UnitLength, tolerance) && FMath::IsNearlyEqual(ClosestCornerB.Y, RoomBCoord.RoomLowerRightY * UnitLength, tolerance))
+		{
+			// ClosestCornerB는 우측하단
+
+			/*	우측하단이므로 우측하단 주변, 즉 우측하단 x - 1, x - 2와 y - 1, y - 2가 후보 타일이 된다.
+			*	단, 추후 길찾기가 힘들거나 실패할 경우, 3 과 4...까지 고려한다. */
+			RoomBTiles.Push(ClosestCornerB + FVector2D(-1 * UnitLength, 0));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(-2 * UnitLength, 0));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(0, -1 * UnitLength));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(0, -2 * UnitLength));
+		}
+		else if (FMath::IsNearlyEqual(ClosestCornerB.X, RoomBCoord.RoomLowerRightX * UnitLength, tolerance) && FMath::IsNearlyEqual(ClosestCornerB.Y, RoomBCoord.RoomUpperLeftY * UnitLength, tolerance))
+		{
+			// ClosestCornerB는 우측상단
+
+			/*	우측상단이므로 우측상단 주변, 즉 우측상단 x - 1, x - 2와 y + 1, y + 2가 후보 타일이 된다.
+			*	단, 추후 길찾기가 힘들거나 실패할 경우, 3 과 4...까지 고려한다. */
+			RoomBTiles.Push(ClosestCornerB + FVector2D(-1 * UnitLength, 0));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(-2 * UnitLength, 0));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(0, 1 * UnitLength));
+			RoomBTiles.Push(ClosestCornerB + FVector2D(0, 2 * UnitLength));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Room B : 어느 쪽 모서리인지 판별 실패, 디버깅 필요"));
+		}
+
+		/* 이제, 방 A, B의 길찾기를 진행할 후보 타일이 4개, 4개씩 들어있다.
+		*  여기서 가장 가까운 타일을 또 구해야하니 RommATiles와 RoomBTiles 를 반복문을 돌려서 가장 유클리드 거리가 작은 타일 2개를 구하고,
+		* 그 타일의 좌표를 "정수화"해서 최종적으로 AStar 알고리즘을 진행하기 위한 준비를 마친다.
+		*  위 코드가 엄청나게 길어 가독성이 떨어지지만 만약 방 A, B의 모든 타일을 후보로 두고 거리를 계산하면 횟수가 최대 1만번까지 많아진다... 만약 시간적 이점이 없다면 추후 리팩토링 해야함
+		* -> 실제 구동 결과 시간적 이점보다 이렇게 되면 타일의 출발지가 너무 적어 타일이 겹치게 되는 경우가 생김, 모든 모서리 타일을 다 넣고 돌려야할듯 
+		*/
+
+		FVector2D ClosestTileA;
+		FVector2D ClosestTileB;
+
+		float MinTileDist = TNumericLimits<float>::Max();
+		float CurrentTileDist;
+		
+		// Euclidean DIstance
+		for (const FVector2D& ATile : RoomATiles)
+		{
+			for (const FVector2D& BTile : RoomBTiles)
+			{
+				CurrentTileDist = FVector2D::DistSquared(ATile, BTile);
+
+				if (CurrentTileDist < MinTileDist)
+				{
+					MinTileDist = CurrentTileDist;
+					ClosestTileA = ATile;
+					ClosestTileB = BTile;
+				}
+			}
+		}
+
+		DrawDebugLine(World, FVector(ClosestTileA, 1800.f), FVector(ClosestTileB, 1800.f), FColor::Blue, true, -1.f, 0, 200.f);
+	}
+
+	
+
+	
+
 }

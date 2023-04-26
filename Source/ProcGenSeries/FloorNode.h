@@ -8,10 +8,10 @@ struct FCornerCoordinates
 	int32 LowerRightY;
 
 	// 축소된 이후의 최종적인 Room의 Corner 좌표
-	float RoomUpperLeftX;
-	float RoomUpperLeftY;
-	float RoomLowerRightX;
-	float RoomLowerRightY;
+	int32 RoomUpperLeftX;
+	int32 RoomUpperLeftY;
+	int32 RoomLowerRightX;
+	int32 RoomLowerRightY;
 };
 
 class FloorNode
@@ -26,7 +26,7 @@ public:
 	FORCEINLINE void SetCornerCoordinates(FCornerCoordinates Coordinates) { CornerCoordinates = Coordinates; }
 
 	FORCEINLINE static int32 GetNodeCount() { return FloorNodeCount; }
-	FORCEINLINE int32 GetArea() const // Floor.cpp내 for문에서 호출될 것이므로 FORCEINLINE 선택
+	FORCEINLINE int32 GetArea() const
 	{
 		int32 NodeWidth = CornerCoordinates.LowerRightX - CornerCoordinates.UpperLeftX;
 		int32 NodeLength = CornerCoordinates.LowerRightY - CornerCoordinates.UpperLeftY;
@@ -98,7 +98,7 @@ public:
 		return (CornerCoordinates.RoomUpperLeftY + CornerCoordinates.RoomLowerRightY) / 2.f;
 	}
 
-	//FCornerCoordinates TryGetGridCoordByMidPoint(float MidPointX, float MidPointY) const;
+	FCornerCoordinates TryGetCornerCoordinatesByMidPoint(float MidPointX, float MidPointY) const;
 
 private:
 	FCornerCoordinates CornerCoordinates;

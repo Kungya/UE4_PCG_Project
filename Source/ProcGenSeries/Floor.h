@@ -66,6 +66,8 @@ public:
 	void ReincorporateEdge(UWorld* World);
 	/* ------------------------------------------------ */
 
+	void SelectThreshold(UWorld* World);
+
 	FORCEINLINE void SetMSTEdges(TArray<TPair<FVector2D, FVector2D>> newMSTEdges) { MSTEdges = newMSTEdges; }
 
 	FORCEINLINE TArray<TSharedPtr<FloorNode>> GetPartitionedFloor() const { return PartitionedFloor; }
