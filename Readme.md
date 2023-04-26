@@ -13,4 +13,4 @@ Procedural Generation Project Using the BSP(Binary Space Partition) Base
 
 ![image](https://user-images.githubusercontent.com/80544647/233895154-b64fba69-c75e-49e4-8f43-dffbd9980a87.png)
 
-![image](https://user-images.githubusercontent.com/80544647/234505305-ba58734a-f90c-4b69-8184-0b241e1e19ab.png)
+![image](https://user-images.githubusercontent.com/80544647/234505590-cdcb0d96-f741-45e6-be19-d42ee1cc778f.png)
