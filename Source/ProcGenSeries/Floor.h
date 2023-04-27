@@ -3,7 +3,7 @@
 #include "Room.h"
 #include "DelaunayTriangulation.h"
 #include "MinimumSpanningTree.h"
-#include "Containers/Set.h"
+#include "AStar.h"
 
 enum class ESplitOrientation
 {
@@ -68,6 +68,10 @@ public:
 
 	void SelectThreshold(UWorld* World);
 
+	void PathFind(UWorld* World);
+
+	void UpdatePathFindGrid(UWorld* World);
+
 	FORCEINLINE void SetMSTEdges(TArray<TPair<FVector2D, FVector2D>> newMSTEdges) { MSTEdges = newMSTEdges; }
 
 	FORCEINLINE TArray<TSharedPtr<FloorNode>> GetPartitionedFloor() const { return PartitionedFloor; }
@@ -86,11 +90,39 @@ private:
 
 	TArray<delaunay::Edge<float>> TriangulatedUniqueEdgesArr;
 
+	// in MST
 	TArray<Node> Nodes;
 
+	// in CreateMST
 	TArray<TPair<FVector2D, FVector2D>> MSTEdges;
 
+	// in ReincorporateEdge
 	TArray<TPair<FVector2D, FVector2D>> Hallways;
+
+	// in SelectThreshold
+	TArray<TPair<FVector2D, FVector2D>> Thresholds;
+
+	// temporary TArray to Draw Debug Hallway Trace
+	TArray<TPair<int32, int32>> HallwayDraw; 
+
+	/* AStar Data Segment */
+	/*int32 ExampleGrid[9][10]
+		= { { 1, 0, 1, 1, 1, 1, 0, 1, 1, 1 },
+			{ 1, 1, 1, 0, 1, 1, 1, 0, 1, 1 },
+			{ 1, 1, 1, 0, 1, 1, 0, 1, 0, 1 },
+			{ 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
+			{ 1, 1, 1, 0, 1, 1, 1, 0, 1, 0 },
+			{ 1, 0, 1, 1, 1, 1, 0, 1, 0, 0 },
+			{ 1, 0, 0, 0, 0, 1, 0, 0, 0, 1 },
+			{ 1, 0, 1, 1, 1, 1, 0, 1, 1, 1 },
+			{ 1, 1, 1, 0, 0, 0, 1, 0, 0, 1 } };*/
+
+	// Grid[y][x]
+	int32 PathFindGrid[50][50];
+
+	TArray<TPair<int32, int32>> HallwayTrace;
+
+	/* ---------------------------------------------------------------- */
 
 	float MinCostSum;
 
@@ -104,8 +136,10 @@ private:
 
 	int32 RoomMinArea;
 	float RoomMinRatio;
+	int32 RoomMinWidth;
+	int32 RoomMinLength;
 
-	float UnitLength;
+	int32 UnitLength;
 
 	float SplitChance;
 

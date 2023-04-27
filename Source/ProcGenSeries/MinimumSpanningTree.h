@@ -69,10 +69,9 @@ public:
 	int32 ConvertCoordToId(const float& CoordX, const float& CoordY);
 	FVector2D ConvertIdToCoord(const int32& id);
 
-	FORCEINLINE TArray<TPair<FVector2D, FVector2D>> GetMSTEdges()
+	FORCEINLINE TArray<TPair<FVector2D, FVector2D>> GetMSTEdges() const
 	{
-		// TODO : about using Move Semantics, except const in function 
-		return MoveTemp(MSTEdges);
+		return MSTEdges;
 	}
 private:
 	TArray<Node> Nodes;

@@ -30,7 +30,7 @@ public:
 
 	void SetStaticMeshSize(const FVector& TargetUnitSize);
 
-	void SetUnitLength(float NewUnitLength);
+	void SetUnitLength(int32 NewUnitLength);
 
 	void SetRoomSize(const FVector& TargetSize);
 
@@ -57,7 +57,7 @@ private:
 
 	FVector FloorSize;
 
-	float UnitLength;
+	int32 UnitLength;
 
 	float RoomWallThicknessFactor;
 	float RoomHeightFactor;

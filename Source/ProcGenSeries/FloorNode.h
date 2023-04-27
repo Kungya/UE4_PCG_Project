@@ -34,28 +34,28 @@ public:
 
 		return Area;
 	}
-	FORCEINLINE float GetWidth() const
+	FORCEINLINE int32 GetWidth() const
 	{
-		float Width = CornerCoordinates.LowerRightX - CornerCoordinates.UpperLeftX;
+		int32 Width = CornerCoordinates.LowerRightX - CornerCoordinates.UpperLeftX;
 		
 		return Width;
 	}
-	FORCEINLINE float GetLength() const
+	FORCEINLINE int32 GetLength() const
 	{
-		float Length = CornerCoordinates.LowerRightY - CornerCoordinates.UpperLeftY;
+		int32 Length = CornerCoordinates.LowerRightY - CornerCoordinates.UpperLeftY;
 
 		return Length;
 	}
-	FORCEINLINE float GetRoomWidth() const
+	FORCEINLINE int32 GetRoomWidth() const
 	{
-		float RoomWidth = CornerCoordinates.RoomLowerRightX - CornerCoordinates.RoomUpperLeftX;
+		int32 RoomWidth = CornerCoordinates.RoomLowerRightX - CornerCoordinates.RoomUpperLeftX;
 
 		return RoomWidth;
 	}
 
-	FORCEINLINE float GetRoomLength() const
+	FORCEINLINE int32 GetRoomLength() const
 	{
-		float RoomLength = CornerCoordinates.RoomLowerRightY - CornerCoordinates.RoomUpperLeftY;
+		int32 RoomLength = CornerCoordinates.RoomLowerRightY - CornerCoordinates.RoomUpperLeftY;
 
 		return RoomLength;
 	}

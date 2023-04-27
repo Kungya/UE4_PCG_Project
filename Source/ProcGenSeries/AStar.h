@@ -4,8 +4,8 @@
 // or not use TArray and AddUnique, sort
 #include "set"
 
-#define MapGridSizeY 9
-#define MapGridSizeX 10
+#define MapGridSizeY 50
+#define MapGridSizeX 50
 
 struct cell
 {
@@ -20,7 +20,7 @@ class AStar
 public:
 	void TracePath(cell cellDetails[][MapGridSizeX], std::pair<int32, int32> Dest)
 	{
-		UE_LOG(LogTemp, Error, TEXT("The Path is"));
+		//UE_LOG(LogTemp, Error, TEXT("The Path is"));
 		int32 Y = Dest.first;
 		int32 X = Dest.second;
 
@@ -42,14 +42,21 @@ public:
 		{
 			TPair<int32, int32> p = Path.Top();
 			Path.Pop();
-			UE_LOG(LogTemp, Error, TEXT("-> ( %d, %d )"), p.Key, p.Value);
+
+			HallwayTrace.Push(p);
+			
+			//UE_LOG(LogTemp, Error, TEXT("-> ( %d, %d )"), p.Key, p.Value);
 		}
 
 		return;
 	}
 
-	void AStarSearch(int32 grid[][MapGridSizeX], std::pair<int32, int32> Start = {8, 0}, std::pair<int32, int32> Dest = {0, 0})
+	void AStarSearch(int32 grid[][MapGridSizeX], TPair<int32, int32> StartTPair, TPair<int32, int32> DestTPair)
 	{
+		//std::pair<int32, int32> Start = {8, 0}, std::pair<int32, int32> Dest = {0, 0}
+		std::pair<int32, int32> Start = { StartTPair.Key, StartTPair.Value };
+		std::pair<int32, int32> Dest = { DestTPair.Key, DestTPair.Value };
+
 		if (IsValid(Start.first, Start.second) == false)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Start is invalid"));
@@ -249,6 +256,17 @@ public:
 		return;
 	}
 
+	// move semantics
+	FORCEINLINE TArray<TPair<int32, int32>> GetHallwayTrace() const
+	{
+		return HallwayTrace;
+	}
+
+	void ClearHallwayTrace()
+	{ // Empties array
+		HallwayTrace.Empty();
+	}
+
 
 private:
 	bool IsValid(int32 Y, int32 X)
@@ -257,7 +275,7 @@ private:
 	}
 
 	bool IsUnBlocked(int32 grid[][MapGridSizeX], int32 Y, int32 X)
-	{
+	{ // "1"만이 진행할 수 있는 블럭 -> 장애물에 0뿐만이 아니라 2, 3같은 추가적인 값 사용가능 !
 		if (grid[Y][X] == 1)
 			return true;
 		else
@@ -275,7 +293,12 @@ private:
 	double CalculateHeuristicValue(int32 Y, int32 X, std::pair<int32, int32> Dest)
 	{
 		// Using Euc Distance.
-		return ((double)sqrt
-		((Y - Dest.first) * (Y - Dest.first) + (X - Dest.second) * (X - Dest.second)));
+		/*return ((double)sqrt
+		((Y - Dest.first) * (Y - Dest.first) + (X - Dest.second) * (X - Dest.second)));*/
+		
+		// Using Manhattan Distance.
+		return (FMath::Abs(Y - Dest.first) + FMath::Abs(X - Dest.second));
 	}
+
+	TArray<TPair<int32, int32>> HallwayTrace;
 };

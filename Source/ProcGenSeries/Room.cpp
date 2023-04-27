@@ -114,7 +114,7 @@ void ARoom::SetStaticMeshSize(const FVector& TargetUnitSize)
 	RoomRoof->SetRelativeScale3D(FloorRatio);
 }
 
-void ARoom::SetUnitLength(float NewUnitLength)
+void ARoom::SetUnitLength(int32 NewUnitLength)
 {
 	this->UnitLength = NewUnitLength;
 }

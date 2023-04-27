@@ -5,8 +5,6 @@
 #include "DrawDebugHelpers.h"
 #include "FloorNode.h"
 #include "Floor.h"
-#include "AStar.h"
-
 #include "Components/InstancedStaticMeshComponent.h"
 
 #include "NavigationSystem.h"
@@ -93,13 +91,14 @@ void AProceduralRoom::BeginPlay()
 	UE_LOG(LogTemp, Warning, TEXT("Partitioned Block Count : %d"), TheFloor->GetPartitionedFloor().Num());
 	TheFloor->SpawnRoom(GetWorld());
 
+	TheFloor->PathFind(GetWorld());
 	/* ------------------------------------------------------------------------------------------------ */
 	// TODO : Move Sematnics
 	/*Hallways = TheFloor->GetHallways();*/
+	
+	
 
-	/* AStar Exercise */
-	//TUniquePtr<AStar> PathFind(new AStar());
-	//PathFind->AStarSearch(ExampleGrid);
+
 	/*	계획
 	*	그 다음, 강의 영상에서 알려준 복도 생성을 위한 thresholds, 문지방을 방내에서 선택해야
 	*	하는데, 지금으로써 생각할 수 있는 방법은 방 내에서 배열과 같이 모든 그리드들의 좌표를 들고 있다가, 
@@ -211,7 +210,7 @@ void AProceduralRoom::BuildPath(const FVector2D& StartLocation2D, const FVector2
 	Query.Owner = GetOwner();
 
 	FPathFindingResult Result = NavSystem->FindPathSync(Query);
-
+	
 	if (Result.IsSuccessful() && Result.Path.IsValid())
 	{
 		TArray<FNavPathPoint> PathPoints = Result.Path->GetPathPoints();
