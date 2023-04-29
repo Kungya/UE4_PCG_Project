@@ -72,7 +72,7 @@ public:
 		if (IsUnBlocked(grid, Start.first, Start.second) == false 
 			|| IsUnBlocked(grid, Dest.first, Dest.second) == false)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Start or Destination is Blocked"));
+			//UE_LOG(LogTemp, Warning, TEXT("Start or Destination is Blocked"));
 			return;
 		}
 
@@ -134,7 +134,7 @@ public:
 				{
 					cellDetails[i - 1][j].ParentY = i;
 					cellDetails[i - 1][j].ParentX = j;
-					UE_LOG(LogTemp, Error, TEXT("Destination cell is found"));
+					//UE_LOG(LogTemp, Error, TEXT("Destination cell is found"));
 					TracePath(cellDetails, Dest);
 					return;
 				}
@@ -164,7 +164,7 @@ public:
 				{
 					cellDetails[i + 1][j].ParentY = i;
 					cellDetails[i + 1][j].ParentX = j;
-					UE_LOG(LogTemp, Error, TEXT("Destination cell is found"));
+					//UE_LOG(LogTemp, Error, TEXT("Destination cell is found"));
 					TracePath(cellDetails, Dest);
 					return;
 				}
@@ -194,7 +194,7 @@ public:
 				{
 					cellDetails[i][j + 1].ParentY = i;
 					cellDetails[i][j + 1].ParentX = j;
-					UE_LOG(LogTemp, Error, TEXT("Destination cell is found"));
+					//UE_LOG(LogTemp, Error, TEXT("Destination cell is found"));
 					TracePath(cellDetails, Dest);
 					return;
 				}
@@ -224,7 +224,7 @@ public:
 				{
 					cellDetails[i][j - 1].ParentY = i;
 					cellDetails[i][j - 1].ParentX = j;
-					UE_LOG(LogTemp, Error, TEXT("Destination cell is found"));
+					//UE_LOG(LogTemp, Error, TEXT("Destination cell is found"));
 					TracePath(cellDetails, Dest);
 					return;
 				}
@@ -250,20 +250,19 @@ public:
 
 		if (bFoundDest == false)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Fail to find the Destination Cell"));
+			//UE_LOG(LogTemp, Warning, TEXT("Fail to find the Destination Cell"));
 		}
 
 		return;
 	}
 
-	// move semantics
 	FORCEINLINE TArray<TPair<int32, int32>> GetHallwayTrace() const
 	{
 		return HallwayTrace;
 	}
 
 	void ClearHallwayTrace()
-	{ // Empties array
+	{ // Empties array to recycle
 		HallwayTrace.Empty();
 	}
 

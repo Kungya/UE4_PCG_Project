@@ -91,7 +91,7 @@ void AProceduralRoom::BeginPlay()
 	UE_LOG(LogTemp, Warning, TEXT("Partitioned Block Count : %d"), TheFloor->GetPartitionedFloor().Num());
 	TheFloor->SpawnRoom(GetWorld());
 
-	TheFloor->PathFind(GetWorld());
+	//TheFloor->PathFind(GetWorld());
 	/* ------------------------------------------------------------------------------------------------ */
 	// TODO : Move Sematnics
 	/*Hallways = TheFloor->GetHallways();*/

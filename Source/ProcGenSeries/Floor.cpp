@@ -638,47 +638,73 @@ void Floor::SelectThreshold(UWorld* World)
 		* -> 실제 구동 결과 시간적 이점보다 이렇게 되면 타일의 출발지가 너무 적어 타일이 겹치게 되는 경우가 생김, 모든 모서리 타일을 다 넣고 돌려야할듯 
 		*/
 
-		FVector2D ClosestTileA;
-		FVector2D ClosestTileB;
-
-		int32 MinTileDist = TNumericLimits<int32>::Max();
-		int32 CurrentTileDist;
+		int32 MinTraceLength = TNumericLimits<int32>::Max();
+		int32 CurrentTraceLength;
 		
-		// in32 변경이유 : float 오차로 X->Y, Y->X로 연결되지않고 간혹 X->X, Y->Y로 연결되는 현상 방지
-		// Euclidean Distance or Manhattan Distance (Optional)
+		TUniquePtr<AStar> PathFinder(new AStar());
+
 		for (const FVector2D& ATile : RoomATiles)
 		{
 			for (const FVector2D& BTile : RoomBTiles)
 			{
-				//CurrentTileDist = FVector2D::DistSquared(ATile, BTile);
-				float ManhattanDist = FMath::Abs(ATile.X - BTile.X) + FMath::Abs(ATile.Y - BTile.Y);
-				CurrentTileDist = FMath::FloorToInt(ManhattanDist + 0.01f);
+				// Start : ATile, Dest : BTile
+				TPair<int32, int32> StartTPair = TPair<int32, int32>(FMath::FloorToInt(ATile.Y / UnitLength + 0.01f), FMath::FloorToInt(ATile.X / UnitLength + 0.01f));
+				TPair<int32, int32> DestTPair = TPair<int32, int32>(FMath::FloorToInt(BTile.Y / UnitLength + 0.01f), FMath::FloorToInt(BTile.X / UnitLength + 0.01f));
 
-				// 가장 짧은 복도 결정
-				if (CurrentTileDist < MinTileDist)
+				UpdatePathFindGrid(World);
+
+				// TODO : 만약 길찾기를 돌리다가, 실패하는 경우가 생기면? -> GetHallwayTrace가 Nullptr일것이다
+				PathFinder->AStarSearch(PathFindGrid, StartTPair, DestTPair);
+				CurrentHallwayTrace = PathFinder->GetHallwayTrace();
+				if (CurrentHallwayTrace.Num() == 0)
+				{ // execept : Fail to PathFind
+					continue;
+				}
+				PathFinder->ClearHallwayTrace();
+				CurrentTraceLength = CurrentHallwayTrace.Num();
+
+				if (CurrentTraceLength < MinTraceLength)
 				{
-					MinTileDist = CurrentTileDist;
-					ClosestTileA = ATile;
-					ClosestTileB = BTile;
+					MinTraceLength = CurrentTraceLength;
+					MinHallwayTrace = CurrentHallwayTrace;
 				}
 			}
 		}
-		/*	TODO: Room A, B의 모서리가 평행해 가장 짧은 복도가 여러개일 경우 위와 같은 상황에서는 가장 첫 복도가 계속 선택되어
-		*	던전 전체의 시점에서 복도의 생성 위치가 일렬로 편향되는 현상이 발생한다. 이를 위해 ?
-		*/
 
+		if (MinHallwayTrace.Num() == 0)
+			UE_LOG(LogTemp, Warning, TEXT("모든 블럭에 대해 길찾기를 하여도 복도의 가능한 경로를 생성하지 못했음. Error"));
 		
-		//DrawDebugLine(World, FVector(ClosestTileA, 1750.f), FVector(ClosestTileB, 1750.f), FColor::Blue, true, -1.f, 0, 150.f);
+		// Renew : MinHallwayTrace에 최소 길이를 갖는 복도가 들어있게 된다. 우선은 DrawDebug
+		for (const TPair<int32, int32>& t : MinHallwayTrace)
+		{
+			PathFindGrid[t.Key][t.Value] = 2;
 
-		Thresholds.Push(TPair<FVector2D, FVector2D>(ClosestTileA, ClosestTileB));
+			HallwayDraw.Push(t);
+
+			if (HallwayDraw.Num() == 2)
+			{
+				DrawDebugLine(World,
+					FVector(HallwayDraw[0].Value * UnitLength, HallwayDraw[0].Key * UnitLength, 1800.f),
+					FVector(HallwayDraw[1].Value * UnitLength, HallwayDraw[1].Key * UnitLength, 1800.f),
+					FColor::Turquoise, true, -1.f, 0, 200.f);
+
+				// 0부터 1개 삭제
+				if (HallwayDraw.IsValidIndex(0))
+					HallwayDraw.RemoveAt(0);
+			}
+		}
+		HallwayDraw.Empty();
 	}
-	
-	/*이제, Thresholds에 복도의 입구 좌표를 쥐고있는 Pair들이 전부 들어있음
-	* TODO : Need to PathFind for determine Hallway Grid Block using A* algorithm.
+
+	/* TODO: 만약 여기서 던전의 Cycle 생성을 위해 이전에 간선 첨가 함수를 다시 작동 시켰을 때, 해야 할 점은
+	*  기존에 생성된 복도와 시작점이 겹칠 경우, 길찾기가 중복으로 실패될 가능성이 존재한다. 물론 이 상황에서 복도는 추가적인 요소이기 때문에 실패하더라도
+	*  핵심적인 지장은 없어 간선이 첨가되는 확률을 더 늘리면 해결이 되긴한다. 그래도 본질적으로 해결할려면 추후 복도를 생성할 때 마다 출발지 - 도착지를
+	*  따로 저장해서 ATiles, BTiles를 구할 때 저장한 부분을 체크해서 중복된다면 ATiles, BTiles에 추가하지 말아야 한다.
+	*  또한 최소 스패닝 트리와 다르게 첨가된 간선은 길이가 매우 길 수도 있으므로, 복도의 길이가 매우 길어질 가능성이 높다.
 	*/
 }
 
-void Floor::PathFind(UWorld* World)
+void Floor::PathFind()
 {
 	/* 1)우선, Thresholds에 있는 TPair<FVector2D, FVecotr2D>에서 FVector2D의 X, Y 좌표를 int형으로 바꿔줘야한다. 그리드 상태에서 길찾기를 해야하므로,
 	* 여기서 중요하게 생각해야할 점은 float형이고 현재 좌표도 잦은 곱셈연산으로 인해 정밀도가 크게 떨어져 있는상황이므로 float + 0.01을 하고 버림을 해야
@@ -687,53 +713,45 @@ void Floor::PathFind(UWorld* World)
 	* 
 	* ** 또한 길찾기전, grid에 각각의 방 좌표들을 장애물로 넣어줘야한다 여기서, 방의 테두리 부분은 넣지 않도록 한다
 	* -> 이미 Threshold들이 테두리 위치로 잡혀있으므로...
-	* 
 	* TODO : AStar에서 TracePath 수정필요, Stack -> TArray 변환, 
 	*/
-
-	/* AStar Exercise */
-	TUniquePtr<AStar> PathFind(new AStar());
-
-	UpdatePathFindGrid(World);
-
+	//TUniquePtr<AStar> PathFind(new AStar());
 	for (const auto& i : Thresholds)
 	{
 		// ★ TPair<Y, X> ****
-		TPair<int32, int32> StartTPair = TPair<int32, int32>(FMath::FloorToInt(i.Key.Y / UnitLength + 0.01f), FMath::FloorToInt(i.Key.X / UnitLength + 0.01f));
-		TPair<int32, int32> DestTPair = TPair<int32, int32>(FMath::FloorToInt(i.Value.Y / UnitLength + 0.01f), FMath::FloorToInt(i.Value.X / UnitLength + 0.01f));
-		
-		PathFind->AStarSearch(PathFindGrid, StartTPair, DestTPair);
-		HallwayTrace = PathFind->GetHallwayTrace();
-		// Empties array.
-		PathFind->ClearHallwayTrace();
+		//TPair<int32, int32> StartTPair = TPair<int32, int32>(FMath::FloorToInt(i.Key.Y / UnitLength + 0.01f), FMath::FloorToInt(i.Key.X / UnitLength + 0.01f));
+		//TPair<int32, int32> DestTPair = TPair<int32, int32>(FMath::FloorToInt(i.Value.Y / UnitLength + 0.01f), FMath::FloorToInt(i.Value.X / UnitLength + 0.01f));
+		//
+		//TUniquePtr<AStar> PathFind(new AStar());
 
-		UE_LOG(LogTemp, Warning, TEXT("HallwayTrace's Size : %d"), HallwayTrace.Num());
+		//PathFind->AStarSearch(PathFindGrid, StartTPair, DestTPair);
+		//HallwayTrace = PathFind->GetHallwayTrace();
+		//// Empties array.
+		//PathFind->ClearHallwayTrace();
+
+		//UE_LOG(LogTemp, Warning, TEXT("HallwayTrace's Size : %d"), HallwayTrace.Num());
 		
 		// reflect Trace of Hallway to PathFindGrid
-		for (const TPair<int32, int32>& t : HallwayTrace)
-		{
-			PathFindGrid[t.Key][t.Value] = 2;
-			
-			HallwayDraw.Push(t);
+	//	for (const TPair<int32, int32>& t : HallwayTrace)
+	//	{
+	//		PathFindGrid[t.Key][t.Value] = 2;
+	//		
+	//		HallwayDraw.Push(t);
 
-			if (HallwayDraw.Num() == 2)
-			{
-				DrawDebugLine(World, 
-					FVector(HallwayDraw[0].Value * UnitLength, HallwayDraw[0].Key * UnitLength, 1800.f), 
-					FVector(HallwayDraw[1].Value * UnitLength, HallwayDraw[1].Key * UnitLength, 1800.f), 
-					FColor::Turquoise, true, -1.f, 0, 200.f);
+	//		if (HallwayDraw.Num() == 2)
+	//		{
+	//			DrawDebugLine(World,
+	//				FVector(HallwayDraw[0].Value * UnitLength, HallwayDraw[0].Key * UnitLength, 1800.f),
+	//				FVector(HallwayDraw[1].Value * UnitLength, HallwayDraw[1].Key * UnitLength, 1800.f),
+	//				FColor::Turquoise, true, -1.f, 0, 200.f);
 
-				// 0부터 1개 삭제
-				if (HallwayDraw.IsValidIndex(0))
-					HallwayDraw.RemoveAt(0);
-			}
-			
-
-			//UE_LOG(LogTemp, Warning, TEXT("%d %d"), t.Key, t.Value);
-		}
-		//UE_LOG(LogTemp, Warning, TEXT("---------"));
-		
-		HallwayDraw.Empty();
+	//			// 0부터 1개 삭제
+	//			if (HallwayDraw.IsValidIndex(0))
+	//				HallwayDraw.RemoveAt(0);
+	//		}
+	//		//UE_LOG(LogTemp, Warning, TEXT("%d %d"), t.Key, t.Value);
+	//	}
+	//	HallwayDraw.Empty();
 	}
 
 	// TODO : 출발지 또는 도착지가 Blocked인 예외 상황 발생	
@@ -753,6 +771,14 @@ void Floor::PathFind(UWorld* World)
 	*  condition을 정하는 것또한 쉽지 않음
 	*/
 
+	/*아까 골랐던 길찾기 출발지를 중복하여 또 골라 복도 생성에 실패하는 경우 : 
+	* 
+	* 시도할만한 해결법 :
+	* -> 기존에는 Euclidean distance로 가장 가까운 타일을 골라서 Tresholds Tarray에 담은 뒤, 이걸 하나씩 꺼내서 A*를 했는데,
+	* 시간이 좀 더 걸림을 감수 하고서라도 Euclidean distance로 타일을 고르는게 아닌 후보지 타일들 전부에 대해 A* 길찾기를 진행 후, (휴리스틱은 Manhattan)
+	* 가장 짧은 Trace (size로 비교) 를 HallDraw에 넣어서 Num() ==2일 때 Debug Line을 출력해보자
+	*  이걸 하기 위해서는 현재 PathFind 함수와 위에 있던 거리 계산 loop 부분을 합쳐야한다.
+	*/
 
 }
 
@@ -766,16 +792,25 @@ void Floor::UpdatePathFindGrid(UWorld* World)
 	* ■■■■■■■■■■■
 	*/
 
+	// "1"만이 진행할 수 있는 블럭 -> 장애물에 0뿐만이 아니라 2, 3같은 추가적인 값 사용가능 !
 	// 방마다 내부 x, y 좌표를 Grid에다가 반영, 구조상 3중 loop 불가피
 	for (const auto& i : RoomCandidates)
 	{
-		for (int32 y = i->GetCornerCoordinates().RoomUpperLeftY + 1; y < i->GetCornerCoordinates().RoomLowerRightY - 1; y++)
+		// 테두리를 제외한 중심부분 이동 불가 설정
+		for (int32 y = i->GetCornerCoordinates().RoomUpperLeftY + 1; y <= i->GetCornerCoordinates().RoomLowerRightY - 1; y++)
 		{
-			for (int32 x = i->GetCornerCoordinates().RoomUpperLeftX + 1; x < i->GetCornerCoordinates().RoomLowerRightX - 1; x++)
+			for (int32 x = i->GetCornerCoordinates().RoomUpperLeftX + 1; x <= i->GetCornerCoordinates().RoomLowerRightX - 1; x++)
 			{
 				PathFindGrid[y][x] = 0;
 			}
 		}
+
+		// 길찾기 방향을 올바르게 지정해주기 위해 방의 Corner (꼭짓점) 부분 4군데는 이동불가능하게 설정
+		// TODO : 추후 이 방법이 유효하지 않을 경우 길찾기의 시작점, 도착점을 제외한 테두리 전부도 0으로 설정할 수도 있음
+		PathFindGrid[i->GetCornerCoordinates().RoomUpperLeftY][i->GetCornerCoordinates().RoomUpperLeftX] = 0;
+		PathFindGrid[i->GetCornerCoordinates().RoomUpperLeftY][i->GetCornerCoordinates().RoomLowerRightX] = 0;
+		PathFindGrid[i->GetCornerCoordinates().RoomLowerRightY][i->GetCornerCoordinates().RoomUpperLeftX] = 0;
+		PathFindGrid[i->GetCornerCoordinates().RoomLowerRightY][i->GetCornerCoordinates().RoomLowerRightX] = 0;
 	}
 	/*for (int32 y = 0; y < FloorGridSizeY; y++)
 	{

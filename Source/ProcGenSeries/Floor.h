@@ -68,7 +68,7 @@ public:
 
 	void SelectThreshold(UWorld* World);
 
-	void PathFind(UWorld* World);
+	void PathFind();
 
 	void UpdatePathFindGrid(UWorld* World);
 
@@ -120,7 +120,8 @@ private:
 	// Grid[y][x]
 	int32 PathFindGrid[50][50];
 
-	TArray<TPair<int32, int32>> HallwayTrace;
+	TArray<TPair<int32, int32>> CurrentHallwayTrace;
+	TArray<TPair<int32, int32>> MinHallwayTrace;
 
 	/* ---------------------------------------------------------------- */
 
