@@ -1,5 +1,17 @@
 
 Procedural Generation Project Using the BSP(Binary Space Partition) Base
+use assets file Content.zip in Content folder
+
+--- asset list in gitignore ---
+# assets and animations
+Content/Assets
+Content/FirstPerson
+Content/StarterContent
+Content/Geometry
+
+FirstPerson is dummy asset
+StarterContent and Geometry are Unreal Basic Assets
+custom asset is only material in Content/Assets.
 
 ![PCG_Proto](https://user-images.githubusercontent.com/80544647/230785173-d45cec34-596c-45a6-91b4-76c60cc7ab4c.png)
 
