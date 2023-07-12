@@ -61,6 +61,7 @@ float MinimumSpanningTree::prim()
 			arr.Add(SearchStartingPointOfEdge(PQ.Top().Key, PQ.Top().Value));
 			arr.Add(PQ.Top().Value);
 
+			// TODO(ERROR) : 2-300번에 한번씩 변환이 실패해 MST의 간선 중 정점 하나가 다른 정점으로 변환되는 현상이 발견됨
 			MSTEdges.Emplace(TPair<FVector2D, FVector2D>(ConvertIdToCoord(arr[0]), ConvertIdToCoord(arr[1])));
 			if (arr.Num() == 2)
 			{

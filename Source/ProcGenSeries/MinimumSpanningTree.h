@@ -25,7 +25,7 @@ struct Node
 	// TODO : Get id By Coord
 	FORCEINLINE int32 TryGetIdByCoord(float CoordX, float CoordY) const
 	{
-		float Tolerance = 0.01f;
+		float Tolerance = 0.1f;
 		if (FMath::IsNearlyEqual(x, CoordX, Tolerance) && FMath::IsNearlyEqual(y, CoordY, Tolerance))
 		{ // succeed
 			//UE_LOG(LogTemp, Warning, TEXT("id %d : %f %f | %f %f"), id, x, CoordX, y, CoordY);

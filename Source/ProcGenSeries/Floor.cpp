@@ -401,7 +401,8 @@ void Floor::CreateMST(UWorld* World)
 	TUniquePtr<MinimumSpanningTree> MST(new MinimumSpanningTree(Nodes, TriangulatedUniqueEdgesArr, World));
 	MinCostSum = MST->prim();
 	UE_LOG(LogTemp, Warning, TEXT("Prim Result(최소가중치합) : %f"), MinCostSum);
-	SetMSTEdges(MST->GetMSTEdges());
+	MSTEdges = MST->GetMSTEdges();
+	//SetMSTEdges(MST->GetMSTEdges());
 	/*for (auto& i : MSTEdges)
 	{
 		DrawDebugLine(World, FVector(i.Key.X, i.Key.Y, 1700.f), FVector(i.Value.X, i.Value.Y, 1700.f), FColor::Red, true, -1, 0, 100.f);
@@ -487,6 +488,13 @@ void Floor::SelectThreshold(UWorld* World)
 
 		float MinDist = TNumericLimits<float>::Max();
 		float CurrentDist;
+
+		// ★★★★★★★★★★★★
+		// TODO : 만약 크기가 같은 방 두개가 나란히 같은 y 또는 x 좌표에 있다면, 이렇게 계산해버리면
+		// 오류가 남. 왜냐면 두개의 방이 각각 항상 A: 우측하단, B : 좌측 상단이 뽑힐거라고 예측하지만
+		// 위 예시에서는 x또는 y의 좌표가 같기 때문에 A : 우측상단, B : 좌측 상단 또는
+		// A : 우측 하단, B : 좌측 하단 이렇게 될 수 있기 때문임. 모든 모서리의 좌표를 넣어서 계산하거나 (가장 간단함)
+		// X 또는 Y 좌표가 같을 때 한 모서리 부분만 RoomATiles, RoomBTiles에 넣는 작업이 필요함. 
 
 		// Euclidean Distance
 		for (const FVector2D& A : RoomA)
@@ -663,7 +671,7 @@ void Floor::SelectThreshold(UWorld* World)
 				PathFinder->ClearHallwayTrace();
 				CurrentTraceLength = CurrentHallwayTrace.Num();
 
-				if (CurrentTraceLength < MinTraceLength)
+				if (CurrentTraceLength <= MinTraceLength)
 				{
 					MinTraceLength = CurrentTraceLength;
 					MinHallwayTrace = CurrentHallwayTrace;
@@ -694,6 +702,8 @@ void Floor::SelectThreshold(UWorld* World)
 			}
 		}
 		HallwayDraw.Empty();
+
+		GenerateRightHallwayTrace(World, MinHallwayTrace);
 	}
 
 	/* TODO: 만약 여기서 던전의 Cycle 생성을 위해 이전에 간선 첨가 함수를 다시 작동 시켰을 때, 해야 할 점은
@@ -822,4 +832,84 @@ void Floor::UpdatePathFindGrid(UWorld* World)
 			}
 		}
 	}*/
+}
+
+void Floor::GenerateRightHallwayTrace(UWorld* World, const TArray<TPair<int32, int32>> LeftHallwayTrace)
+{
+
+	for (int32 i = 0; i < LeftHallwayTrace.Num(); i++)
+	{
+		FVector2D CurrentPoint = FVector2D(LeftHallwayTrace[i].Value, LeftHallwayTrace[i].Key);
+		FVector2D PreviousPoint;
+		FVector2D NextPoint;
+
+		// 첫 번째면 현재 점 추가
+		if (i > 0)
+		{
+			PreviousPoint = FVector2D(LeftHallwayTrace[i - 1].Value, LeftHallwayTrace[i - 1].Key);
+		}
+		else
+		{
+			PreviousPoint = FVector2D(LeftHallwayTrace[i].Value, LeftHallwayTrace[i].Key);
+		}
+		// 마지막이면 현재 점 추가
+		if (i < LeftHallwayTrace.Num() - 1)
+		{
+			NextPoint = FVector2D(LeftHallwayTrace[i + 1].Value, LeftHallwayTrace[i + 1].Key);
+		}
+		else
+		{
+			NextPoint = FVector2D(LeftHallwayTrace[i].Value, LeftHallwayTrace[i].Key);
+		}
+
+		FVector2D PreviousVector = (CurrentPoint - PreviousPoint).GetSafeNormal();
+		FVector2D NextVector = (NextPoint - CurrentPoint).GetSafeNormal();
+
+		FVector2D MidVector = ((PreviousVector + NextVector) / 2).GetSafeNormal();
+
+		// 수직 벡터 생성
+		FVector2D PerpendicularVector(-MidVector.Y, MidVector.X);
+
+		FVector2D RightHallwayPoint;
+
+		// 복도의 우측 벽 좌표, PerpendicularVector에 배수를 한다면 폭을 넓힐 수 있을 것임
+		float tolerance = 0.01f;
+		if (FMath::IsNearlyEqual(FVector2D::DotProduct(PreviousVector, NextVector), 0.f, tolerance))
+		{ // 꺾이는 부분
+			RightHallwayPoint = (CurrentPoint - (PerpendicularVector * FMath::Sqrt(2)));
+			UE_LOG(LogTemp, Warning, TEXT("Perpen : %d %d"), PerpendicularVector.X, PerpendicularVector.Y);
+			UE_LOG(LogTemp, Warning, TEXT("MidVector : %d %d"), MidVector.X, MidVector.Y);
+			/*UE_LOG(LogTemp, Warning, TEXT("CurrentPoint : %d, %d"), CurrentPoint.X, CurrentPoint.Y);
+			UE_LOG(LogTemp, Warning, TEXT("RightHallwayPoint : %d, %d"), RightHallwayPoint.X, RightHallwayPoint.Y);*/
+		}
+		else
+		{
+			RightHallwayPoint = CurrentPoint - PerpendicularVector;
+		}
+		
+
+		RightHallwayTrace.Push(RightHallwayPoint * UnitLength);
+	}
+
+	for (const auto& i : RightHallwayTrace)
+	{
+		RightHallwayDraw.Push(i);
+
+		if (RightHallwayDraw.Num() == 2)
+		{
+			// TODO :
+			DrawDebugLine(World, 
+				FVector(RightHallwayDraw[0], 1800.f), 
+				FVector(RightHallwayDraw[1], 1800.f), 
+				FColor::Purple, true, -1.f, 0, 100.f);
+
+			if (RightHallwayDraw.IsValidIndex(0))
+				RightHallwayDraw.RemoveAt(0);
+		}
+	}
+
+	RightHallwayDraw.Empty();
+	//UE_LOG(LogTemp, Warning, TEXT("Num() : %d"), RightHallwayDraw.Num());
+
+	RightHallwayTrace.Empty();
 }

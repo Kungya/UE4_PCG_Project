@@ -72,6 +72,8 @@ public:
 
 	void UpdatePathFindGrid(UWorld* World);
 
+	void GenerateRightHallwayTrace(UWorld* World, const TArray<TPair<int32, int32>> LeftHallwayTrace);
+
 	FORCEINLINE void SetMSTEdges(TArray<TPair<FVector2D, FVector2D>> newMSTEdges) { MSTEdges = newMSTEdges; }
 
 	FORCEINLINE TArray<TSharedPtr<FloorNode>> GetPartitionedFloor() const { return PartitionedFloor; }
@@ -122,6 +124,10 @@ private:
 
 	TArray<TPair<int32, int32>> CurrentHallwayTrace;
 	TArray<TPair<int32, int32>> MinHallwayTrace;
+	TArray<FVector2D> RightHallwayTrace;
+	
+	// temp arr
+	TArray<FVector2D> RightHallwayDraw;
 
 	/* ---------------------------------------------------------------- */
 
