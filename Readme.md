@@ -3,7 +3,6 @@ Procedural Generation Project Using the BSP(Binary Space Partition) Base
 use assets file Content.zip in Content folder
 
 --- asset list in gitignore ---
-# assets and animations
 Content/Assets
 Content/FirstPerson
 Content/StarterContent
