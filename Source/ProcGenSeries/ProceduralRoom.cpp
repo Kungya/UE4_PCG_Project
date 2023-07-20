@@ -101,7 +101,7 @@ void AProceduralRoom::BeginPlay()
 
 
 	/*	계획
-	*	그 다음, 강의 영상에서 알려준 복도 생성을 위한 thresholds, 문지방을 방내에서 선택해야
+	*	그 다음, 알려준 복도 생성을 위한 thresholds, 문지방을 방내에서 선택해야
 	*	하는데, 지금으로써 생각할 수 있는 방법은 방 내에서 배열과 같이 모든 그리드들의 좌표를 들고 있다가, 
 		MST에서 Edge를 받아왔을 때 그 양끝점좌표로 부터 서로 가장 가까운 타일을 두개 선택해야한다는 것이다
 		 그 두개의 타일 좌표를 AStar에 넘겨 
@@ -193,62 +193,4 @@ void AProceduralRoom::PlacePointsOnGrid()
 			GetWorld()->SpawnActor<AActor>(ChairClass, RandomPointInSquare, FRotator(0.f, RandomYaw, 0.f));
 		}
 	}
-}
-
-void AProceduralRoom::BuildPath(const FVector2D& StartLocation2D, const FVector2D& EndLocation2D)
-{
-	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
-	if (!NavSystem)
-	{
-		UE_LOG(LogTemp, Error, TEXT("NavSystem Not Found. !!"));
-		return;
-	}
-
-	FPathFindingQuery Query;
-	Query.StartLocation = FVector(StartLocation2D, 0.f);
-	Query.EndLocation = FVector(EndLocation2D, 0.f);
-	Query.NavData = NavSystem->GetDefaultNavDataInstance(FNavigationSystem::DontCreate);
-	Query.Owner = GetOwner();
-
-	FPathFindingResult Result = NavSystem->FindPathSync(Query);
-	
-	if (Result.IsSuccessful() && Result.Path.IsValid())
-	{
-		TArray<FNavPathPoint> PathPoints = Result.Path->GetPathPoints();
-
-		UE_LOG(LogTemp, Warning, TEXT("%d"), PathPoints.Num());
-		for (int32 i = 0; i < PathPoints.Num() - 1; i++)
-		{
-			DrawDebugPoint(GetWorld(), PathPoints[i].Location + FVector(0.f, 0.f, 1700.f), 30.f, FColor::Red, true, -1.f, 0);
-			// TODO : DrawDebugPoint Last Index of PathPoints
-			DrawDebugLine(GetWorld(), PathPoints[i].Location + FVector(0.f, 0.f, 1700.f), PathPoints[i + 1].Location + FVector(0.f, 0.f, 1700.f), FColor::Blue, true, -1.f, 0, 100.f);
-			UE_LOG(LogTemp, Warning, TEXT("%f %f %f"), PathPoints[i].Location.X, PathPoints[i].Location.Y, PathPoints[i].Location.Z);
-		}
-
-		/*for (int32 i = 0; i < PathPoints.Num() - 1; i++)
-		{
-			FVector StartPoint = PathPoints[i].Location;
-			FVector EndPoint = PathPoints[i + 1].Location;
-
-			FVector PathSegment = StartPoint;
-			float PathSegmentLength = PathSegment.X;
-			FRotator PathSegmentRotation = PathSegment.Rotation();
-
-			UStaticMeshComponent* PathMeshComponent = NewObject<UStaticMeshComponent>(this);
-			PathMeshComponent->SetStaticMesh(PathMesh->GetStaticMesh());
-			PathMeshComponent->SetMaterial(0, PathMaterial);
-			PathMeshComponent->SetWorldLocation(StartPoint);
-			PathMeshComponent->SetWorldRotation(PathSegmentRotation);
-
-
-			PathMeshComponent->SetWorldScale3D(FVector(0.2f, 0.2f, 1.f));
-			PathMeshComponent->RegisterComponent();
-			PathMeshComponent->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
-		}*/
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Pathfinding Failed !!!!!"));
-	}
-
 }

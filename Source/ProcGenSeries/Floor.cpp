@@ -403,10 +403,6 @@ void Floor::CreateMST(UWorld* World)
 	UE_LOG(LogTemp, Warning, TEXT("Prim Result(최소가중치합) : %f"), MinCostSum);
 	MSTEdges = MST->GetMSTEdges();
 	//SetMSTEdges(MST->GetMSTEdges());
-	/*for (auto& i : MSTEdges)
-	{
-		DrawDebugLine(World, FVector(i.Key.X, i.Key.Y, 1700.f), FVector(i.Value.X, i.Value.Y, 1700.f), FColor::Red, true, -1, 0, 100.f);
-	}*/
 }
 
 void Floor::ReincorporateEdge(UWorld* World)
@@ -462,12 +458,7 @@ void Floor::SelectThreshold(UWorld* World)
 			}
 		}
 
-		/* Edge에 따른 각각 방의 양 끝점 좌표를 알게되었으니, 이제 방마다 양끝점 4개끼리 거리를 구한 뒤,
-		* 가장 가까운 점 2개를 선택히고 그 점이 속한 모서리의 타일들 중에서 가장 가까운 타일 2개를 Threshold로
-		* 지정한다 
-		* -> 모든 모서리를 가지고 계산하는 것보다 시간 1/4 소모
-		* 최악의 경우 : (25 * 4)^2, 10000번 계산, (12.5 * 4)^2-> 2500번 계산
-		*/
+		// Edge에 따른 각각 방의 양 끝점 좌표를 알게되었으니, 이제 방마다 양끝점 4개끼리 거리를 구한 뒤,
 
 		// RoomACoord, RoomBCoord
 
@@ -495,6 +486,7 @@ void Floor::SelectThreshold(UWorld* World)
 		// 위 예시에서는 x또는 y의 좌표가 같기 때문에 A : 우측상단, B : 좌측 상단 또는
 		// A : 우측 하단, B : 좌측 하단 이렇게 될 수 있기 때문임. 모든 모서리의 좌표를 넣어서 계산하거나 (가장 간단함)
 		// X 또는 Y 좌표가 같을 때 한 모서리 부분만 RoomATiles, RoomBTiles에 넣는 작업이 필요함. 
+		// -> 최악의 경우 모든 모서리의 좌표를 넣어서 계산 해야함. 평행한 방의 병우 어느 곳이 가장 가까운 두개의 모서리일지 보장할 수 없음.
 
 		// Euclidean Distance
 		for (const FVector2D& A : RoomA)
@@ -642,7 +634,6 @@ void Floor::SelectThreshold(UWorld* World)
 		/* 이제, 방 A, B의 길찾기를 진행할 후보 타일이 4개, 4개씩 들어있다.
 		*  여기서 가장 가까운 타일을 또 구해야하니 RommATiles와 RoomBTiles 를 반복문을 돌려서 가장 유클리드 거리가 작은 타일 2개를 구하고,
 		* 그 타일의 좌표를 "정수화"해서 최종적으로 AStar 알고리즘을 진행하기 위한 준비를 마친다.
-		*  위 코드가 엄청나게 길어 가독성이 떨어지지만 만약 방 A, B의 모든 타일을 후보로 두고 거리를 계산하면 횟수가 최대 1만번까지 많아진다... 만약 시간적 이점이 없다면 추후 리팩토링 해야함
 		* -> 실제 구동 결과 시간적 이점보다 이렇게 되면 타일의 출발지가 너무 적어 타일이 겹치게 되는 경우가 생김, 모든 모서리 타일을 다 넣고 돌려야할듯 
 		*/
 
@@ -703,7 +694,7 @@ void Floor::SelectThreshold(UWorld* World)
 		}
 		HallwayDraw.Empty();
 
-		GenerateRightHallwayTrace(World, MinHallwayTrace);
+		//GenerateRightHallwayTrace(World, MinHallwayTrace);
 	}
 
 	/* TODO: 만약 여기서 던전의 Cycle 생성을 위해 이전에 간선 첨가 함수를 다시 작동 시켰을 때, 해야 할 점은

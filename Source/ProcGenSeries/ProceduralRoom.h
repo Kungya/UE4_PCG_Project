@@ -71,6 +71,4 @@ private:
 
 	TArray<TPair<FVector2D, FVector2D>> Hallways;
 public:
-	void BuildPath(const FVector2D& StartLocation2D, const FVector2D& EndLocation2D);
-
 };
