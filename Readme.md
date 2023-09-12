@@ -12,6 +12,15 @@ FirstPerson is dummy asset<br/>
 StarterContent and Geometry are Unreal Basic Assets<br/>
 custom asset is only material in Content/Assets.<br/>
 
+Process
+1) Binary Space Partition (generate random size block) <br/>
+2) Connect the selected blocks using Delaunay Trianulation <br/>
+3) make Minimum spanning Tree (MST) using Prim algorithm <br/>
+4) (Optional) add extra edges to form cycle <br/>
+5) select nearest spots each blocks <br/>
+6) use A* algorithm to make hallways <br/>
+
+
 ![PCG_Proto](https://user-images.githubusercontent.com/80544647/230785173-d45cec34-596c-45a6-91b4-76c60cc7ab4c.png)
 
 ![PCG-MidProto](https://user-images.githubusercontent.com/80544647/230785194-9543ed24-0dcf-4fd9-9a48-e72bf3d8b7a9.PNG)
