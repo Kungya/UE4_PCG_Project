@@ -19,7 +19,7 @@ Process
 3) Make Minimum spanning Tree (MST) using Prim algorithm <br/>
 4) (Optional) add extra edges to form cycle <br/>
 5) Select nearest spots each blocks <br/>
-6) Use A* algorithm to make hallways <br/>
+6) Use A* algorithm to make hallways connecting two spots (heuristic : Manhattan Distance) <br/>
 
 *Can use additional DFS algorithm to count number of hops if you hope to distinguish each rooms' sequence <br/>
 
