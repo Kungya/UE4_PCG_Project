@@ -1,4 +1,4 @@
-[Notice] This project's c++ codes are not good. codes were written when i didn't have deep understanding about (UE) C++. This is just prototype and gonna be refactored in future. 
+[Notice] This project's C++ codes are not good. codes were written when i didn't have understanding about (UE) C++. This is just prototype and gonna be refactored in future. 
 
 Procedural Generation Project Using the BSP(Binary Space Partitioning) Base<br/>
 use assets file Content.zip in Content folder
