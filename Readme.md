@@ -16,7 +16,7 @@ custom asset is only material in Content/Assets.<br/>
 
 Process
 1) Binary Space Partitioning (generate random size block) <br/>
-2) Connect the selected blocks using Delaunay Trianulation <br/>
+2) Connect the selected blocks using Delaunay Triangulation <br/>
 3) Make Minimum spanning Tree (MST) using Prim algorithm <br/>
 4) (Optional) add extra edges to form cycle <br/>
 5) Select nearest spots each blocks <br/>
